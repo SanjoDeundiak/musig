@@ -80,7 +80,8 @@ mod tests {
         for i in 0..n {
             let participants_copy: Vec<PublicKey<E>> = participants_pk.clone();
 
-            let session: MusigSession<E> = MusigSession::new(Box::new(Sha256HStar {}),
+            let session: MusigSession<E> = MusigSession::new(rng,
+                                                             Box::new(Sha256HStar {}),
                                                              Box::new(Sha256HStar {}),
                                                              Box::new(Sha256HStar {}),
                                                              generator,

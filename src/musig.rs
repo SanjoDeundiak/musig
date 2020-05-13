@@ -3,7 +3,6 @@ use franklin_crypto::jubjub::edwards::Point;
 use franklin_crypto::eddsa::{PublicKey, PrivateKey, Signature};
 use franklin_crypto::jubjub::{Unknown, JubjubEngine, FixedGenerators};
 use bellman::pairing::ff::Field;
-use rand::thread_rng;
 use rand::Rng;
 
 pub struct MusigSession<E: JubjubEngine> {
@@ -28,7 +27,8 @@ pub struct MusigSession<E: JubjubEngine> {
 }
 
 impl<E: JubjubEngine> MusigSession<E> {
-    pub fn new(aggregate_hash: Box<dyn AggregateHash<E>>,
+    pub fn new(rng: &mut impl Rng,
+               aggregate_hash: Box<dyn AggregateHash<E>>,
                commitment_hash: Box<dyn CommitmentHash<E>>,
                signature_hash: Box<dyn SignatureHash<E>>,
                generator: FixedGenerators,
@@ -37,17 +37,17 @@ impl<E: JubjubEngine> MusigSession<E> {
                self_index: usize) -> MusigSession<E> {
         let number_of_participants = participants.len();
 
+        assert!(self_index < number_of_participants);
+
         let (aggregated_public_key, a_self) = MusigSession::<E>::compute_aggregated_public_key(&participants, &*aggregate_hash, self_index, &params);
 
-
-        let (r_self, r_pub_self, t) = MusigSession::<E>::generate_commitment(&*commitment_hash, &params, generator);
+        let (r_self, r_pub_self, t) = MusigSession::<E>::generate_commitment(rng, &*commitment_hash, &params, generator);
 
         let mut t_participants = vec![None; number_of_participants];
         t_participants[self_index] = Some(t);
 
         let mut r_pub_participants = vec![None; number_of_participants];
         r_pub_participants[self_index] = Some(r_pub_self.clone());
-
 
         let session = MusigSession {
             commitment_hash,
@@ -73,8 +73,6 @@ impl<E: JubjubEngine> MusigSession<E> {
                                      aggregate_hash: &dyn AggregateHash<E>,
                                      self_index: usize,
                                      params: &E::Params) -> (PublicKey<E>, E::Fs) {
-        assert!(self_index < participants.len());
-
         let mut x: Point<E, Unknown> = Point::zero();
 
         let mut a_self = None;
@@ -104,13 +102,10 @@ impl<E: JubjubEngine> MusigSession<E> {
         (PublicKey(x), a_self)
     }
 
-    fn generate_commitment(commitment_hash: &dyn CommitmentHash<E>,
+    fn generate_commitment(rng: &mut impl Rng,
+                           commitment_hash: &dyn CommitmentHash<E>,
                            params: &E::Params,
                            generators: FixedGenerators) -> (PrivateKey::<E>, PublicKey<E>, Vec<u8>) {
-        // FIXME
-        // let rng: StdRng = SeedableRng::from_entropy();
-
-        let rng = &mut thread_rng();
         let r = PrivateKey::<E>(rng.gen());
 
         let r_pub = PublicKey::from_private(&r,
