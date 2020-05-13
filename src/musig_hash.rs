@@ -1,0 +1,72 @@
+use franklin_crypto::eddsa::PublicKey;
+use franklin_crypto::jubjub::{JubjubEngine};
+use sha2::{Sha256, Digest};
+use franklin_crypto::util::sha256_hash_to_scalar;
+use bellman::pairing::ff::{PrimeField, PrimeFieldRepr};
+
+pub trait AggregateHash<E: JubjubEngine> {
+    fn hash(&self, pubs: &[PublicKey<E>]) -> E::Fs;
+}
+
+pub trait CommitmentHash<E: JubjubEngine> {
+    fn hash(&self, r_pub: &PublicKey<E>) -> Vec<u8>;
+}
+
+pub trait SignatureHash<E: JubjubEngine> {
+    fn hash(&self, x_pub: &PublicKey<E>, r_pub: &PublicKey<E>, m: &[u8]) -> E::Fs;
+}
+
+#[derive(Clone)]
+pub struct Sha256HStar {}
+
+impl Sha256HStar {
+    fn hash_public_key<E: JubjubEngine>(public_key: &PublicKey<E>, dest: &mut Vec<u8>) {
+        let (pk_x, _) = public_key.0.into_xy();
+        let mut pk_x_bytes = [0u8; 32];
+        pk_x.into_repr().write_le(&mut pk_x_bytes[..]).expect("has serialized pk_x");
+
+        dest.extend_from_slice(&pk_x_bytes);
+    }
+}
+
+impl<E: JubjubEngine> SignatureHash<E> for Sha256HStar {
+    fn hash(&self, x_pub: &PublicKey<E>, r_pub: &PublicKey<E>, m: &[u8]) -> E::Fs {
+        let mut concatenated: Vec<u8> = Vec::new();
+        Sha256HStar::hash_public_key(x_pub, &mut concatenated);
+        Sha256HStar::hash_public_key(r_pub, &mut concatenated);
+
+        let mut msg_padded : Vec<u8> = m.iter().cloned().collect();
+        msg_padded.resize(32, 0u8);
+
+        let c = sha256_hash_to_scalar::<E>(&[], &concatenated, &msg_padded);
+
+        c
+    }
+}
+
+impl<E: JubjubEngine> AggregateHash<E> for Sha256HStar {
+    fn hash(&self, pubs: &[PublicKey<E>]) -> <E as JubjubEngine>::Fs {
+        let mut concatenated: Vec<u8> = Vec::new();
+
+        for pub_key in pubs {
+            Sha256HStar::hash_public_key(pub_key, &mut concatenated);
+        }
+
+        let c = sha256_hash_to_scalar::<E>(&[], &[], &concatenated);
+
+        c
+    }
+}
+
+impl<E: JubjubEngine> CommitmentHash<E> for Sha256HStar {
+    fn hash(&self, r_pub: &PublicKey<E>) -> Vec<u8> {
+        let mut concatenated: Vec<u8>= Vec::new();
+
+        Sha256HStar::hash_public_key(r_pub, &mut concatenated);
+
+        let mut hasher = Sha256::new();
+        hasher.input(&concatenated);
+
+        hasher.result().to_vec()
+    }
+}

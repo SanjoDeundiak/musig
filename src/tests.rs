@@ -1,6 +1,7 @@
 #[cfg(test)]
 mod tests {
-    use crate::musig::{MusigSession, Sha256HStar};
+    use crate::musig::MusigSession;
+    use crate::musig_hash::Sha256HStar;
     use rand::{thread_rng, Rng};
     use franklin_crypto::eddsa::{PrivateKey, PublicKey};
     use franklin_crypto::alt_babyjubjub::{FixedGenerators, AltJubjubBn256};
