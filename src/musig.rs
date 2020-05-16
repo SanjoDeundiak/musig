@@ -135,10 +135,7 @@ impl<E: JubjubEngine> MusigSession<E> {
             }
         }
 
-        let a_self = match a_self {
-            Some(a) => a,
-            None => panic!("Self index not in range"),
-        };
+        let a_self = a_self.expect("Self index not in range");
 
         (PublicKey(x), a_self)
     }
@@ -163,17 +160,11 @@ impl<E: JubjubEngine> MusigSession<E> {
     }
 
     pub fn get_t(&self) -> &Vec<u8> {
-        match &self.t_participants[self.self_index] {
-            Some(t) => return t,
-            None => panic!("Commitment is absent")
-        }
+        self.t_participants[self.self_index].as_ref().expect("Commitment is absent")
     }
 
     pub fn get_r_pub(&self) -> &PublicKey<E> {
-        match &self.r_pub_participants[self.self_index] {
-            Some(r_pub) => return r_pub,
-            None => panic!("R_pub is absent")
-        }
+        self.r_pub_participants[self.self_index].as_ref().expect("R_pub is absent")
     }
 
     pub fn get_aggregated_public_key(&self) -> &PublicKey<E> {
@@ -210,13 +201,8 @@ impl<E: JubjubEngine> MusigSession<E> {
 
         let t_real = self.commitment_hash.hash(&r_pub);
 
-        match &self.t_participants[index] {
-            Some(t) => {
-                if !t.eq(&t_real) {
-                    return Err(MusigError::RPubDoesntMatchWithCommitment)
-                }
-            }
-            None => panic!("Commitment is absent during check")
+        if !self.t_participants[index].as_ref().expect("Commitment is absent during check").eq(&t_real) {
+            return Err(MusigError::RPubDoesntMatchWithCommitment)
         }
 
         self.r_pub_aggregated = PublicKey { 0: self.r_pub_aggregated.0.add(&r_pub.0, &self.params) };
