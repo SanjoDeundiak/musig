@@ -87,7 +87,7 @@ mod tests {
                                                              generator,
                                                              AltJubjubBn256::new(),
                                                              participants_copy,
-                                                             i);
+                                                             i).expect("");
 
             sessions.push(session);
         }
@@ -124,7 +124,7 @@ mod tests {
                     None => break,
                 };
 
-                session.set_t(t, mid.get_self_index());
+                session.set_t(t, mid.get_self_index()).expect("");
             }
         }
 
@@ -140,7 +140,7 @@ mod tests {
                     None => break,
                 };
 
-                session.set_r_pub(r_pub.clone(), mid.get_self_index());
+                session.set_r_pub(r_pub.clone(), mid.get_self_index()).expect("");
             }
         }
 
@@ -150,13 +150,13 @@ mod tests {
         let mut s = Vec::new();
 
         for i in 0..n {
-            s.push((&mut sessions[i]).sign(&participants_sk[i], &m));
+            s.push((&mut sessions[i]).sign(&participants_sk[i], &m).expect(""));
         }
 
-        let signature = sessions[0].aggregate_signature(&s);
+        let signature = sessions[0].aggregate_signature(&s).expect("");
 
         for i in 0..n {
-            let signature1 = sessions[i].aggregate_signature(&s);
+            let signature1 = sessions[i].aggregate_signature(&s).expect("");
 
             assert!(signature.r.eq(&signature1.r));
             assert!(signature.s.eq(&signature1.s));
