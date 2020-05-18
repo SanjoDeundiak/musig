@@ -1,9 +1,8 @@
-use crate::musig_hash::{AggregateHash, CommitmentHash, SignatureHash};
+use crate::musig_hash::{AggregateHash, CommitmentHash, SignatureHash, MsgHash};
 use franklin_crypto::jubjub::edwards::Point;
-use franklin_crypto::eddsa::{PublicKey, PrivateKey, Signature};
+use franklin_crypto::eddsa::{PublicKey, PrivateKey, Signature, Seed};
 use franklin_crypto::jubjub::{Unknown, JubjubEngine, FixedGenerators};
 use bellman::pairing::ff::Field;
-use rand::Rng;
 
 #[derive(Debug)]
 pub enum MusigError {
@@ -26,7 +25,7 @@ impl MusigError {
             MusigError::AssigningCommitmentToSelfIsForbidden => "assigning commitment to self is forbidden",
             MusigError::DuplicateCommitmentAssignment => "duplicate commitment assignment",
             MusigError::AssigningRPubToSelfIsForbidden => "assigning r_pub to self is forbidden",
-            MusigError::AssigningRPubBeforeSettingAllCommitmentsIsForbidden => "assigning r_pub before setting all commitments is dorbidden",
+            MusigError::AssigningRPubBeforeSettingAllCommitmentsIsForbidden => "assigning r_pub before setting all commitments is forbidden",
             MusigError::DuplicateRPubAssignment => "duplicate r_pub assignment",
             MusigError::RPubDoesntMatchWithCommitment => "r_pub doesnt match with commitment",
             MusigError::SigningBeforeSettingAllRPubIsForbidden => "signing before setting all r_pub is forbidden",
@@ -47,6 +46,7 @@ impl std::fmt::Display for MusigError {
 pub struct MusigSession<E: JubjubEngine> {
     commitment_hash: Box<dyn CommitmentHash<E>>,
     signature_hash: Box<dyn SignatureHash<E>>,
+    msg_hash: Box<dyn MsgHash>,
     params: E::Params,
     participants: Vec<PublicKey<E>>,
     self_index: usize,
@@ -66,15 +66,18 @@ pub struct MusigSession<E: JubjubEngine> {
 }
 
 impl<E: JubjubEngine> MusigSession<E> {
-    pub fn new(rng: &mut impl Rng,
-               aggregate_hash: Box<dyn AggregateHash<E>>,
+    pub fn new(aggregate_hash: Box<dyn AggregateHash<E>>,
                commitment_hash: Box<dyn CommitmentHash<E>>,
                signature_hash: Box<dyn SignatureHash<E>>,
+               msg_hash: Box<dyn MsgHash>,
                generator: FixedGenerators,
                params: E::Params,
                participants: Vec<PublicKey<E>>,
+               seed: Seed<E>,
                self_index: usize) -> Result<MusigSession<E>, MusigError> {
         let number_of_participants = participants.len();
+
+        // FIXME: Checks
 
         if self_index >= number_of_participants {
             return Err(MusigError::SelfIndexOutOfBounds)
@@ -82,7 +85,7 @@ impl<E: JubjubEngine> MusigSession<E> {
 
         let (aggregated_public_key, a_self) = MusigSession::<E>::compute_aggregated_public_key(&participants, &*aggregate_hash, self_index, &params);
 
-        let (r_self, r_pub_self, t) = MusigSession::<E>::generate_commitment(rng, &*commitment_hash, &params, generator);
+        let (r_self, r_pub_self, t) = MusigSession::<E>::generate_commitment(seed, &*commitment_hash, &params, generator);
 
         let mut t_participants = vec![None; number_of_participants];
         t_participants[self_index] = Some(t);
@@ -93,6 +96,7 @@ impl<E: JubjubEngine> MusigSession<E> {
         let session = MusigSession {
             commitment_hash,
             signature_hash,
+            msg_hash,
             params,
             participants,
             self_index,
@@ -140,15 +144,13 @@ impl<E: JubjubEngine> MusigSession<E> {
         (PublicKey(x), a_self)
     }
 
-    fn generate_commitment(rng: &mut impl Rng,
+    fn generate_commitment(seed: Seed<E>,
                            commitment_hash: &dyn CommitmentHash<E>,
                            params: &E::Params,
                            generator: FixedGenerators) -> (PrivateKey::<E>, PublicKey<E>, Vec<u8>) {
-        let r = PrivateKey::<E>(rng.gen());
+        let r = PrivateKey::<E>(seed.0);
 
-        let r_pub = PublicKey::from_private(&r,
-                                            generator,
-                                            params);
+        let r_pub = PublicKey::from_private(&r, generator, params);
 
         let t = commitment_hash.hash(&r_pub);
 
@@ -222,7 +224,9 @@ impl<E: JubjubEngine> MusigSession<E> {
             return Err(MusigError::SigningShouldHappenOnlyOncePerSession)
         }
 
-        let mut s= self.signature_hash.hash(&self.aggregated_public_key, &self.r_pub_aggregated, m);
+        let msg_hash = self.msg_hash.hash(m);
+
+        let mut s = self.signature_hash.hash(&self.aggregated_public_key, &self.r_pub_aggregated, &msg_hash);
 
         s.mul_assign(&self.a_self);
         s.mul_assign(&sk.0);
@@ -234,6 +238,8 @@ impl<E: JubjubEngine> MusigSession<E> {
     }
 
     pub fn aggregate_signature(&self, participant_signatures: &[E::Fs]) -> Result<Signature<E>, MusigError> {
+        assert!(!participant_signatures.is_empty());
+
         if !self.performed_sign {
             return Err(MusigError::AggregatingSignatureBeforeSigningIsForbidden)
         }
@@ -248,5 +254,31 @@ impl<E: JubjubEngine> MusigSession<E> {
             r: self.r_pub_aggregated.0.clone(),
             s
         })
+    }
+}
+
+pub struct MusigVerifier<E: JubjubEngine> {
+    msg_hash: Box<dyn MsgHash>,
+    params: E::Params,
+    generator: FixedGenerators
+}
+
+impl<E: JubjubEngine> MusigVerifier<E> {
+
+    pub fn new(msg_hash: Box<dyn MsgHash>,
+               generator: FixedGenerators,
+               params: E::Params) -> MusigVerifier<E> {
+        MusigVerifier {
+            msg_hash,
+            params,
+            generator
+        }
+    }
+
+    pub fn verify_signature(&self, signature: &Signature<E>, msg: &[u8], aggregated_public_key: &PublicKey<E>) -> bool {
+
+        let msg_hash = self.msg_hash.hash(msg);
+
+        aggregated_public_key.verify_musig_sha256(&msg_hash, signature, self.generator, &self.params)
     }
 }

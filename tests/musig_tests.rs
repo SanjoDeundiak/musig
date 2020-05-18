@@ -1,9 +1,9 @@
 #[cfg(test)]
-mod tests {
-    use crate::musig::MusigSession;
-    use crate::musig_hash::Sha256HStar;
+mod musig_tests {
+    use musig::musig::{MusigSession, MusigVerifier};
+    use musig::musig_hash::Sha256HStar;
     use rand::{thread_rng, Rng};
-    use franklin_crypto::eddsa::{PrivateKey, PublicKey};
+    use franklin_crypto::eddsa::{PrivateKey, PublicKey, Seed};
     use franklin_crypto::alt_babyjubjub::{FixedGenerators, AltJubjubBn256};
     use bellman::pairing::bn256::Bn256;
 
@@ -80,13 +80,16 @@ mod tests {
         for i in 0..n {
             let participants_copy: Vec<PublicKey<E>> = participants_pk.clone();
 
-            let session: MusigSession<E> = MusigSession::new(rng,
+            let seed = Seed::<Bn256>(rng.gen());
+
+            let session: MusigSession<E> = MusigSession::new(Box::new(Sha256HStar {}),
                                                              Box::new(Sha256HStar {}),
                                                              Box::new(Sha256HStar {}),
                                                              Box::new(Sha256HStar {}),
                                                              generator,
                                                              AltJubjubBn256::new(),
                                                              participants_copy,
+                                                             seed,
                                                              i).expect("");
 
             sessions.push(session);
@@ -97,7 +100,7 @@ mod tests {
 
     fn sign_and_verify_random_message(n: usize) {
         let params = AltJubjubBn256::new();
-        let generator = FixedGenerators::ProofGenerationKey;
+        let generator = FixedGenerators::SpendingKeyGenerator;
 
         let mut rng = &mut thread_rng();
 
@@ -144,13 +147,16 @@ mod tests {
             }
         }
 
-        let mut m = [0; 32];
-        rng.fill_bytes(&mut m);
+        let mut size = rng.gen();
+        size = size % 1024 + 32;
+
+        let mut msg: Vec<u8> = vec!(0; size);
+        rng.fill_bytes(&mut msg);
 
         let mut s = Vec::new();
 
         for i in 0..n {
-            s.push((&mut sessions[i]).sign(&participants_sk[i], &m).expect(""));
+            s.push((&mut sessions[i]).sign(&participants_sk[i], &msg).expect(""));
         }
 
         let signature = sessions[0].aggregate_signature(&s).expect("");
@@ -162,7 +168,9 @@ mod tests {
             assert!(signature.s.eq(&signature1.s));
         }
 
-        assert!(aggregated_public_key.verify_musig_sha256(&m, &signature, generator, &params));
+        let verifier = MusigVerifier::<E>::new(Box::new(Sha256HStar {}), generator, AltJubjubBn256::new());
+
+        assert!(verifier.verify_signature(&signature, &msg, &aggregated_public_key));
     }
 
     #[test]

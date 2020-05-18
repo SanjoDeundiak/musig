@@ -16,11 +16,15 @@ pub trait SignatureHash<E: JubjubEngine> {
     fn hash(&self, x_pub: &PublicKey<E>, r_pub: &PublicKey<E>, m: &[u8]) -> E::Fs;
 }
 
+pub trait MsgHash {
+    fn hash(&self, m: &[u8]) -> Vec<u8>;
+}
+
 #[derive(Clone)]
 pub struct Sha256HStar {}
 
 impl Sha256HStar {
-    fn hash_public_key<E: JubjubEngine>(public_key: &PublicKey<E>, dest: &mut Vec<u8>) {
+    fn write_public_key<E: JubjubEngine>(public_key: &PublicKey<E>, dest: &mut Vec<u8>) {
         let (pk_x, _) = public_key.0.into_xy();
         let mut pk_x_bytes = [0u8; 32];
         pk_x.into_repr().write_le(&mut pk_x_bytes[..]).expect("has serialized pk_x");
@@ -32,8 +36,8 @@ impl Sha256HStar {
 impl<E: JubjubEngine> SignatureHash<E> for Sha256HStar {
     fn hash(&self, x_pub: &PublicKey<E>, r_pub: &PublicKey<E>, m: &[u8]) -> E::Fs {
         let mut concatenated: Vec<u8> = Vec::new();
-        Sha256HStar::hash_public_key(x_pub, &mut concatenated);
-        Sha256HStar::hash_public_key(r_pub, &mut concatenated);
+        Sha256HStar::write_public_key(x_pub, &mut concatenated);
+        Sha256HStar::write_public_key(r_pub, &mut concatenated);
 
         let mut msg_padded : Vec<u8> = m.iter().cloned().collect();
         msg_padded.resize(32, 0u8);
@@ -49,7 +53,7 @@ impl<E: JubjubEngine> AggregateHash<E> for Sha256HStar {
         let mut concatenated: Vec<u8> = Vec::new();
 
         for pub_key in pubs {
-            Sha256HStar::hash_public_key(pub_key, &mut concatenated);
+            Sha256HStar::write_public_key(pub_key, &mut concatenated);
         }
 
         let c = sha256_hash_to_scalar::<E>(&[], &[], &concatenated);
@@ -62,11 +66,21 @@ impl<E: JubjubEngine> CommitmentHash<E> for Sha256HStar {
     fn hash(&self, r_pub: &PublicKey<E>) -> Vec<u8> {
         let mut concatenated: Vec<u8>= Vec::new();
 
-        Sha256HStar::hash_public_key(r_pub, &mut concatenated);
+        Sha256HStar::write_public_key(r_pub, &mut concatenated);
 
-        let mut hasher = Sha256::new();
+        let mut hasher = Sha256::default();
         hasher.input(&concatenated);
 
         hasher.result().to_vec()
+    }
+}
+
+impl MsgHash for Sha256HStar {
+    fn hash(&self, m: &[u8]) -> Vec<u8> {
+        let mut hash = Sha256::default();
+
+        hash.input(m);
+
+        hash.result().to_vec()
     }
 }
