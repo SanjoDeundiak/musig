@@ -78,6 +78,12 @@ impl MusigWasmVerifier {
     }
 }
 
+impl Default for MusigWasmVerifier {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 struct MusigWasmFormats {}
 
 /// Fs
@@ -325,6 +331,12 @@ impl MusigWasmBuilder {
         let musig = MusigWasm { musig: session };
 
         Ok(musig)
+    }
+}
+
+impl Default for MusigWasmBuilder {
+    fn default() -> Self {
+        Self::new()
     }
 }
 

@@ -5,7 +5,7 @@ use franklin_crypto::util::sha256_hash_to_scalar;
 use sha2::{Digest, Sha256};
 
 pub trait AggregateHash<E: JubjubEngine> {
-    fn hash(&self, pubs: &[PublicKey<E>]) -> E::Fs;
+    fn hash(&self, pubs: &[PublicKey<E>], last: &PublicKey<E>) -> E::Fs;
 }
 
 pub trait CommitmentHash<E: JubjubEngine> {
@@ -41,26 +41,24 @@ impl<E: JubjubEngine> SignatureHash<E> for Sha256HStar {
         Sha256HStar::write_public_key(x_pub, &mut concatenated);
         Sha256HStar::write_public_key(r_pub, &mut concatenated);
 
-        let mut msg_padded: Vec<u8> = m.iter().cloned().collect();
+        let mut msg_padded: Vec<u8> = m.to_vec();
         msg_padded.resize(32, 0u8);
 
-        let c = sha256_hash_to_scalar::<E>(&[], &concatenated, &msg_padded);
-
-        c
+        sha256_hash_to_scalar::<E>(&[], &concatenated, &msg_padded)
     }
 }
 
 impl<E: JubjubEngine> AggregateHash<E> for Sha256HStar {
-    fn hash(&self, pubs: &[PublicKey<E>]) -> <E as JubjubEngine>::Fs {
+    fn hash(&self, pubs: &[PublicKey<E>], last: &PublicKey<E>) -> <E as JubjubEngine>::Fs {
         let mut concatenated: Vec<u8> = Vec::new();
 
         for pub_key in pubs {
             Sha256HStar::write_public_key(pub_key, &mut concatenated);
         }
 
-        let c = sha256_hash_to_scalar::<E>(&[], &[], &concatenated);
+        Sha256HStar::write_public_key(last, &mut concatenated);
 
-        c
+        sha256_hash_to_scalar::<E>(&[], &[], &concatenated)
     }
 }
 

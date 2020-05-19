@@ -133,7 +133,7 @@ impl<E: JubjubEngine> MusigSession<E> {
     }
 
     fn compute_aggregated_public_key(
-        participants: &Vec<PublicKey<E>>,
+        participants: &[PublicKey<E>],
         aggregate_hash: &dyn AggregateHash<E>,
         self_index: usize,
         params: &E::Params,
@@ -141,21 +141,14 @@ impl<E: JubjubEngine> MusigSession<E> {
         let mut x: Point<E, Unknown> = Point::zero();
 
         let mut a_self = None;
-        let mut ai_vec = participants.clone();
 
         for i in 0..participants.len() {
-            let public_key = &participants[i];
+            let ai = aggregate_hash.hash(&participants, &participants[i]);
 
-            ai_vec.push(public_key.clone());
-
-            let ai = aggregate_hash.hash(&ai_vec);
-
-            ai_vec.pop();
-
-            x = x.add(&public_key.0.mul(ai, params), params);
+            x = x.add(&participants[i].0.mul(ai, params), params);
 
             if i == self_index {
-                a_self = Some(ai.clone());
+                a_self = Some(ai);
             }
         }
 
