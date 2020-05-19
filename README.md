@@ -104,24 +104,24 @@ Preliminaries:
     
     let builder_i = new wasm.MusigWasmBuilder();
     for (let j = 0; j < n; j++) {
-        builder_i.add_participant(public_key_i, i === j);
+        builder_i.addParticipant(publicKey_i, i === j);
     }
    
-    builder_i.derive_seed(signer_private_key_i, message);
+    builder_i.deriveSeed(signerPrivateKey_i, message);
    
     let session_i = builder_i.build();
     ```
 
 1. Get aggregated public key which will be used for verification
     ```js
-    let aggregatedPublicKey = sessions_i.get_aggregated_public_key();
+    let aggregatedPublicKey = sessions_i.getAggregatedPublicKey();
     ```
    
    Each signer will get same value from this function
 
 1. Each signer (i) should upload its commitment (t) to the server
     ```js
-    let t_i = session_i.get_t();
+    let t_i = session_i.getT();
     // Send t to the server 
     ```
    
@@ -131,13 +131,13 @@ Preliminaries:
         if (j === i) {
             continue;
         }
-        session_i.set_t(t_j, j); 
+        session_i.setT(t_j, j); 
     }
     ```
    
 1. Each signer (i) reveals his R (sends it to the server)
     ```js
-    let r_pub_i = session_i.get_r_pub();
+    let r_pub_i = session_i.getRPub();
     // Send r_pub_i to the server
     ``` 
 
@@ -147,24 +147,24 @@ Preliminaries:
         if (j === i) {
             continue;
         }
-        session_i.set_r_pub(r_pub_j, j); 
+        session_i.setRPub(r_pub_j, j); 
     }
     ```
    
 1. Each signer (i) produces his part of the signature (s) and pushes it to the server
     ```js
-    let s_i = session_i.sign(signer_private_key_i, message);
+    let s_i = session_i.sign(signerPrivateKey_i, message);
     // Send s_i to the server
     ```
    
 1. Any (or all) of the signers can now aggregate parts into final signature
     ```js
-    let aggregator = sessions_i.build_signature_aggregator();
+    let aggregator = sessions_i.buildSignatureAggregator();
     for (let i = 0; i < n; i++) {
-        aggregator.add_signature(s_i);
+        aggregator.addSignature(s_i);
     }
     
-    let signature = aggregator.get_signature();
+    let signature = aggregator.getSignature();
     ```
    
 1. Signature can now be verified

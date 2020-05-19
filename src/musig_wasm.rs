@@ -179,7 +179,7 @@ pub struct MusigWasmUtils {}
 
 #[wasm_bindgen]
 impl MusigWasmUtils {
-    #[wasm_bindgen]
+    #[wasm_bindgen(js_name = "generatePrivateKey")]
     pub fn generate_private_key(seed: &[usize]) -> Result<Vec<u8>, JsValue> {
         let mut rng: StdRng = SeedableRng::from_seed(seed);
 
@@ -192,7 +192,7 @@ impl MusigWasmUtils {
         Ok(vec)
     }
 
-    #[wasm_bindgen]
+    #[wasm_bindgen(js_name = "extractPublicKey")]
     pub fn extract_public_key(private_key: &[u8]) -> Result<Vec<u8>, JsValue> {
         let private_key = MusigWasmFormats::read_private_key(private_key)?;
 
@@ -226,8 +226,6 @@ pub struct MusigWasmBuilder {
     hash: MusigHash,
 }
 
-// FIXME: Add (js_name = "")
-
 #[wasm_bindgen]
 impl MusigWasmBuilder {
     #[wasm_bindgen(constructor)]
@@ -241,12 +239,12 @@ impl MusigWasmBuilder {
         }
     }
 
-    #[wasm_bindgen]
+    #[wasm_bindgen(js_name = "setAllHashes")]
     pub fn set_all_hashes(&mut self, hash: MusigHash) {
         self.hash = hash;
     }
 
-    #[wasm_bindgen]
+    #[wasm_bindgen(js_name = "deriveSeed")]
     pub fn derive_seed(&mut self, sk: &[u8], msg: &[u8]) -> Result<(), JsValue> {
         let sk = MusigWasmFormats::read_private_key(sk)?;
 
@@ -265,7 +263,7 @@ impl MusigWasmBuilder {
         Ok(())
     }
 
-    #[wasm_bindgen]
+    #[wasm_bindgen(js_name = "addParticipant")]
     pub fn add_participant(
         &mut self,
         participant_public_key: &[u8],
@@ -347,17 +345,17 @@ pub struct MusigWasm {
 
 #[wasm_bindgen]
 impl MusigWasm {
-    #[wasm_bindgen]
+    #[wasm_bindgen(js_name = "getSelfIndex")]
     pub fn get_self_index(&self) -> usize {
         self.musig.get_self_index()
     }
 
-    #[wasm_bindgen]
+    #[wasm_bindgen(js_name = "getT")]
     pub fn get_t(&self) -> Vec<u8> {
         self.musig.get_t().clone()
     }
 
-    #[wasm_bindgen]
+    #[wasm_bindgen(js_name = "getRPub")]
     pub fn get_r_pub(&self) -> Result<Vec<u8>, JsValue> {
         let mut vec = Vec::<u8>::new();
 
@@ -366,7 +364,7 @@ impl MusigWasm {
         Ok(vec)
     }
 
-    #[wasm_bindgen]
+    #[wasm_bindgen(js_name = "getAggregatedPublicKey")]
     pub fn get_aggregated_public_key(&self) -> Result<Vec<u8>, JsValue> {
         let mut vec = Vec::<u8>::new();
 
@@ -375,14 +373,14 @@ impl MusigWasm {
         Ok(vec)
     }
 
-    #[wasm_bindgen]
+    #[wasm_bindgen(js_name = "setT")]
     pub fn set_t(&mut self, t: &[u8], index: usize) -> Result<(), JsValue> {
         self.musig
             .set_t(t, index)
             .map_err(MusigWasmFormats::map_musig_error_to_js)
     }
 
-    #[wasm_bindgen]
+    #[wasm_bindgen(js_name = "setRPub")]
     pub fn set_r_pub(&mut self, r_pub: &[u8], index: usize) -> Result<(), JsValue> {
         let key = MusigWasmFormats::read_public_key(r_pub)?;
 
@@ -405,7 +403,7 @@ impl MusigWasm {
         MusigWasmFormats::write_fs(&res, &mut vec).map(|_| vec)
     }
 
-    #[wasm_bindgen]
+    #[wasm_bindgen(js_name = "buildSignatureAggregator")]
     pub fn build_signature_aggregator(self) -> MusigWasmSignatureAggregator {
         MusigWasmSignatureAggregator {
             musig: self.musig,
@@ -422,7 +420,7 @@ pub struct MusigWasmSignatureAggregator {
 
 #[wasm_bindgen]
 impl MusigWasmSignatureAggregator {
-    #[wasm_bindgen]
+    #[wasm_bindgen(js_name = "addSignature")]
     pub fn add_signature(&mut self, signature: &[u8]) -> Result<(), JsValue> {
         let s = MusigWasmFormats::read_fs(signature)?;
 
@@ -431,7 +429,7 @@ impl MusigWasmSignatureAggregator {
         Ok(())
     }
 
-    #[wasm_bindgen]
+    #[wasm_bindgen(js_name = "getSignature")]
     pub fn get_signature(&self) -> Result<Vec<u8>, JsValue> {
         let signature = self
             .musig
