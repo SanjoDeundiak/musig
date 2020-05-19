@@ -1,8 +1,8 @@
 #[cfg(test)]
 mod musig_wasm_tests {
-    use musig::musig_wasm::{MusigWasm, MusigWasmUtils, MusigWasmBuilder, MusigWasmVerifier};
-    use rand::{thread_rng, Rng};
     use byte_slice_cast::*;
+    use musig::musig_wasm::{MusigWasm, MusigWasmBuilder, MusigWasmUtils, MusigWasmVerifier};
+    use rand::{thread_rng, Rng};
 
     struct SplitIterator<'a, T> {
         index: usize,
@@ -11,12 +11,11 @@ mod musig_wasm_tests {
     }
 
     impl<'a, T> SplitIterator<'a, T> {
-        fn new(left: &'a mut [T],
-               right: &'a mut [T]) -> SplitIterator<'a, T> {
+        fn new(left: &'a mut [T], right: &'a mut [T]) -> SplitIterator<'a, T> {
             SplitIterator {
                 index: 0,
                 left,
-                right
+                right,
             }
         }
 
@@ -25,11 +24,9 @@ mod musig_wasm_tests {
 
             if self.index < self.left.len() {
                 res = Some(&mut self.left[self.index]);
-            }
-            else if self.index < self.left.len() + self.right.len() {
+            } else if self.index < self.left.len() + self.right.len() {
                 res = Some(&mut self.right[self.index - self.left.len()]);
-            }
-            else {
+            } else {
                 res = None
             }
 
@@ -46,15 +43,17 @@ mod musig_wasm_tests {
         unsafe {
             assert!(mid < len);
 
-            (SplitIterator::new(std::slice::from_raw_parts_mut(ptr, mid), std::slice::from_raw_parts_mut(ptr.add(mid + 1),  len - mid - 1)),
-             &mut *ptr.add(mid))
+            (
+                SplitIterator::new(
+                    std::slice::from_raw_parts_mut(ptr, mid),
+                    std::slice::from_raw_parts_mut(ptr.add(mid + 1), len - mid - 1),
+                ),
+                &mut *ptr.add(mid),
+            )
         }
     }
 
-    fn create_sessions(rng: &mut impl Rng,
-                       msg: &[u8],
-                       n: usize) -> (Vec<MusigWasm>,
-                                     Vec<Vec<u8>>) {
+    fn create_sessions(rng: &mut impl Rng, msg: &[u8], n: usize) -> (Vec<MusigWasm>, Vec<Vec<u8>>) {
         let mut participants_sk: Vec<Vec<u8>> = Vec::new();
         let mut participants_pk: Vec<Vec<u8>> = Vec::new();
 
@@ -84,7 +83,9 @@ mod musig_wasm_tests {
             builder.derive_seed(&participants_sk[i], msg).expect("");
 
             for j in 0..n {
-                builder.add_participant(&participants_pk[j], i == j).expect("");
+                builder
+                    .add_participant(&participants_pk[j], i == j)
+                    .expect("");
             }
 
             sessions.push(builder.build().expect(""));
@@ -99,7 +100,7 @@ mod musig_wasm_tests {
         let mut size = rng.gen();
         size = size % 1024 + 32;
 
-        let mut msg: Vec<u8> = vec!(0; size);
+        let mut msg: Vec<u8> = vec![0; size];
         rng.fill_bytes(&mut msg);
 
         let (mut sessions, participants_sk) = create_sessions(&mut rng, &msg, n);
@@ -148,20 +149,28 @@ mod musig_wasm_tests {
         let mut signatures = Vec::new();
 
         for i in 0..n {
-            signatures.push((&mut sessions[i]).sign(&participants_sk[i], &msg).expect(""));
+            signatures.push(
+                (&mut sessions[i])
+                    .sign(&participants_sk[i], &msg)
+                    .expect(""),
+            );
         }
 
         let mut signature_aggregator = sessions.pop().expect("").build_signature_aggregator();
 
         for i in 0..n {
-            signature_aggregator.add_signature(&signatures[i]).expect("")
+            signature_aggregator
+                .add_signature(&signatures[i])
+                .expect("")
         }
 
         let signature = signature_aggregator.get_signature().expect("");
 
         let verifier = MusigWasmVerifier::new();
 
-        let verified = verifier.verify(&msg, &aggregated_public_key, &signature).expect("");
+        let verified = verifier
+            .verify(&msg, &aggregated_public_key, &signature)
+            .expect("");
 
         assert!(verified);
     }

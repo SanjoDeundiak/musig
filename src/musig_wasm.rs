@@ -1,15 +1,15 @@
-use crate::musig::{MusigSession, MusigError, MusigVerifier};
+use crate::musig::{MusigError, MusigSession, MusigVerifier};
 use crate::musig_hash::Sha256HStar;
-use franklin_crypto::alt_babyjubjub::{FixedGenerators, AltJubjubBn256};
-use franklin_crypto::alt_babyjubjub::edwards::Point;
-use franklin_crypto::alt_babyjubjub::Unknown;
-use franklin_crypto::alt_babyjubjub::fs::{Fs, FsRepr};
 use bellman::pairing::bn256::Bn256;
-use bellman::pairing::ff::{PrimeFieldRepr, PrimeField};
+use bellman::pairing::ff::{PrimeField, PrimeFieldRepr};
+use franklin_crypto::alt_babyjubjub::edwards::Point;
+use franklin_crypto::alt_babyjubjub::fs::{Fs, FsRepr};
+use franklin_crypto::alt_babyjubjub::Unknown;
+use franklin_crypto::alt_babyjubjub::{AltJubjubBn256, FixedGenerators};
+use franklin_crypto::eddsa::{PrivateKey, PublicKey, Seed, Signature};
+use rand::{Rng, SeedableRng, StdRng};
+use sha2::{Digest, Sha256};
 use wasm_bindgen::prelude::*;
-use franklin_crypto::eddsa::{PublicKey, PrivateKey, Signature, Seed};
-use sha2::{Sha256, Digest};
-use rand::{StdRng, SeedableRng, Rng};
 
 // FIXME: Why would we need that?
 thread_local! {
@@ -30,7 +30,7 @@ pub fn set_panic_hook() {
     // For more details see
     // https://github.com/rustwasm/console_error_panic_hook#readme
     #[cfg(feature = "console_error_panic_hook")]
-        console_error_panic_hook::set_once();
+    console_error_panic_hook::set_once();
 }
 
 #[wasm_bindgen]
@@ -41,7 +41,7 @@ pub fn init() {
 
 #[wasm_bindgen]
 pub struct MusigWasmVerifier {
-    verifier: MusigVerifier<Bn256>
+    verifier: MusigVerifier<Bn256>,
 }
 
 #[wasm_bindgen]
@@ -54,44 +54,40 @@ impl MusigWasmVerifier {
 
         let msg_hash = Box::new(Sha256HStar {});
 
-        let verifier = MusigVerifier::new(
-            msg_hash,
-            generator,
-            AltJubjubBn256::new(),
-        );
+        let verifier = MusigVerifier::new(msg_hash, generator, AltJubjubBn256::new());
 
-        MusigWasmVerifier {
-            verifier
-        }
+        MusigWasmVerifier { verifier }
     }
 
     #[wasm_bindgen]
-    pub fn verify(&self, msg: &[u8], aggregated_public_key: &[u8], signature: &[u8]) -> Result<bool, JsValue> {
+    pub fn verify(
+        &self,
+        msg: &[u8],
+        aggregated_public_key: &[u8],
+        signature: &[u8],
+    ) -> Result<bool, JsValue> {
         let public_key = MusigWasmFormats::read_public_key(aggregated_public_key)?;
 
         // FIXME: 32 hardcoded
         let r = MusigWasmFormats::read_point(&signature[..32])?;
         let s = MusigWasmFormats::read_fs(&signature[32..])?;
 
-        let sig = Signature::<Bn256> {
-            r,
-            s
-        };
+        let sig = Signature::<Bn256> { r, s };
 
         Ok(self.verifier.verify_signature(&sig, msg, &public_key))
     }
 }
 
-struct MusigWasmFormats {
-
-}
+struct MusigWasmFormats {}
 
 /// Fs
 impl MusigWasmFormats {
     fn read_fs(reader: &[u8]) -> Result<Fs, JsValue> {
         let mut fs_repr = FsRepr::default();
 
-        fs_repr.read_be(reader).map_err(MusigWasmFormats::map_error_to_js)?;
+        fs_repr
+            .read_be(reader)
+            .map_err(MusigWasmFormats::map_error_to_js)?;
 
         Fs::from_repr(fs_repr).map_err(MusigWasmFormats::map_error_to_js)
     }
@@ -109,7 +105,10 @@ impl MusigWasmFormats {
         Ok(PrivateKey::<Bn256>(fs))
     }
 
-    fn write_private_key<W: std::io::Write>(private_key: &PrivateKey<Bn256>, writer: W) -> Result<(), JsValue> {
+    fn write_private_key<W: std::io::Write>(
+        private_key: &PrivateKey<Bn256>,
+        writer: W,
+    ) -> Result<(), JsValue> {
         MusigWasmFormats::write_fs(&private_key.0, writer)
     }
 }
@@ -122,7 +121,10 @@ impl MusigWasmFormats {
         Ok(PublicKey::<Bn256>(point))
     }
 
-    fn write_public_key<W: std::io::Write>(public_key: &PublicKey<Bn256>, writer: W) -> Result<(), JsValue> {
+    fn write_public_key<W: std::io::Write>(
+        public_key: &PublicKey<Bn256>,
+        writer: W,
+    ) -> Result<(), JsValue> {
         MusigWasmFormats::write_point(&public_key.0, writer)
     }
 }
@@ -130,7 +132,9 @@ impl MusigWasmFormats {
 /// FsRepr
 impl MusigWasmFormats {
     fn write_fs_repr<W: std::io::Write>(fs_repr: &FsRepr, writer: W) -> Result<(), JsValue> {
-        fs_repr.write_be(writer).map_err(MusigWasmFormats::map_error_to_js)
+        fs_repr
+            .write_be(writer)
+            .map_err(MusigWasmFormats::map_error_to_js)
     }
 }
 
@@ -138,13 +142,18 @@ impl MusigWasmFormats {
 impl MusigWasmFormats {
     fn read_point(reader: &[u8]) -> Result<Point<Bn256, Unknown>, JsValue> {
         // FIXME: Should it be thread-safe?
-        JUBJUB_PARAMS.with(|params| {
-            Point::<Bn256, Unknown>::read(reader, params)
-        }).map_err(MusigWasmFormats::map_error_to_js)
+        JUBJUB_PARAMS
+            .with(|params| Point::<Bn256, Unknown>::read(reader, params))
+            .map_err(MusigWasmFormats::map_error_to_js)
     }
 
-    fn write_point<W: std::io::Write>(point: &Point<Bn256, Unknown>, writer: W) -> Result<(), JsValue> {
-        point.write(writer).map_err(MusigWasmFormats::map_error_to_js)
+    fn write_point<W: std::io::Write>(
+        point: &Point<Bn256, Unknown>,
+        writer: W,
+    ) -> Result<(), JsValue> {
+        point
+            .write(writer)
+            .map_err(MusigWasmFormats::map_error_to_js)
     }
 }
 
@@ -160,9 +169,7 @@ impl MusigWasmFormats {
 }
 
 #[wasm_bindgen]
-pub struct MusigWasmUtils {
-
-}
+pub struct MusigWasmUtils {}
 
 #[wasm_bindgen]
 impl MusigWasmUtils {
@@ -184,9 +191,10 @@ impl MusigWasmUtils {
         let private_key = MusigWasmFormats::read_private_key(private_key)?;
 
         let public_key = JUBJUB_PARAMS.with(|params| {
-            PublicKey::<Bn256>::from_private(&private_key,
-                                             FixedGenerators::SpendingKeyGenerator /* FIXME */,
-                                             params
+            PublicKey::<Bn256>::from_private(
+                &private_key,
+                FixedGenerators::SpendingKeyGenerator, /* FIXME */
+                params,
             )
         });
 
@@ -200,7 +208,7 @@ impl MusigWasmUtils {
 
 #[wasm_bindgen]
 pub enum MusigHash {
-    SHA256
+    SHA256,
 }
 
 #[wasm_bindgen]
@@ -209,7 +217,7 @@ pub struct MusigWasmBuilder {
     seed: Option<Seed<Bn256>>,
     self_index: usize,
     set_self_index: bool,
-    hash: MusigHash
+    hash: MusigHash,
 }
 
 // FIXME: Add (js_name = "")
@@ -252,9 +260,13 @@ impl MusigWasmBuilder {
     }
 
     #[wasm_bindgen]
-    pub fn add_participant(&mut self, participant_public_key: &[u8], is_me: bool) -> Result<(), JsValue> {
+    pub fn add_participant(
+        &mut self,
+        participant_public_key: &[u8],
+        is_me: bool,
+    ) -> Result<(), JsValue> {
         if is_me && self.set_self_index {
-            return Err(JsValue::from("Second self key"))
+            return Err(JsValue::from("Second self key"));
         }
 
         let key = MusigWasmFormats::read_public_key(participant_public_key)?;
@@ -272,7 +284,7 @@ impl MusigWasmBuilder {
     #[wasm_bindgen]
     pub fn build(self) -> Result<MusigWasm, JsValue> {
         if !self.set_self_index {
-            return Err(JsValue::from("No self index"))
+            return Err(JsValue::from("No self index"));
         }
 
         let seed = self.seed.ok_or_else(|| JsValue::from("No seed"))?;
@@ -281,19 +293,19 @@ impl MusigWasmBuilder {
         let generator = FixedGenerators::SpendingKeyGenerator;
 
         let aggregate_hash = match self.hash {
-            MusigHash::SHA256 => Box::new(Sha256HStar {})
+            MusigHash::SHA256 => Box::new(Sha256HStar {}),
         };
 
         let commitment_hash = match self.hash {
-            MusigHash::SHA256 => Box::new(Sha256HStar {})
+            MusigHash::SHA256 => Box::new(Sha256HStar {}),
         };
 
         let signature_hash = match self.hash {
-            MusigHash::SHA256 => Box::new(Sha256HStar {})
+            MusigHash::SHA256 => Box::new(Sha256HStar {}),
         };
 
         let msg_hash = match self.hash {
-            MusigHash::SHA256 => Box::new(Sha256HStar {})
+            MusigHash::SHA256 => Box::new(Sha256HStar {}),
         };
 
         let session = MusigSession::<Bn256>::new(
@@ -306,12 +318,11 @@ impl MusigWasmBuilder {
             AltJubjubBn256::new(),
             self.participants,
             seed,
-            self.self_index
-        ).map_err(MusigWasmFormats::map_error_to_js)?;
+            self.self_index,
+        )
+        .map_err(MusigWasmFormats::map_error_to_js)?;
 
-        let musig = MusigWasm {
-            musig: session
-        };
+        let musig = MusigWasm { musig: session };
 
         Ok(musig)
     }
@@ -354,30 +365,32 @@ impl MusigWasm {
 
     #[wasm_bindgen]
     pub fn set_t(&mut self, t: &[u8], index: usize) -> Result<(), JsValue> {
-        self.musig.set_t(t, index).map_err(MusigWasmFormats::map_musig_error_to_js)
+        self.musig
+            .set_t(t, index)
+            .map_err(MusigWasmFormats::map_musig_error_to_js)
     }
 
     #[wasm_bindgen]
     pub fn set_r_pub(&mut self, r_pub: &[u8], index: usize) -> Result<(), JsValue> {
         let key = MusigWasmFormats::read_public_key(r_pub)?;
 
-        self.musig.set_r_pub(key, index).map_err(MusigWasmFormats::map_musig_error_to_js)
+        self.musig
+            .set_r_pub(key, index)
+            .map_err(MusigWasmFormats::map_musig_error_to_js)
     }
 
     #[wasm_bindgen]
     pub fn sign(&mut self, sk: &[u8], msg: &[u8]) -> Result<Vec<u8>, JsValue> {
         let key = MusigWasmFormats::read_private_key(sk)?;
 
-        let res = self.musig
+        let res = self
+            .musig
             .sign(&key, msg)
             .map_err(MusigWasmFormats::map_musig_error_to_js)?;
 
-        let mut vec: Vec::<u8> = Vec::new();
+        let mut vec: Vec<u8> = Vec::new();
 
-        MusigWasmFormats::write_fs(&res, &mut vec)
-            .map(|_| {
-                vec
-            })
+        MusigWasmFormats::write_fs(&res, &mut vec).map(|_| vec)
     }
 
     #[wasm_bindgen]
@@ -392,7 +405,7 @@ impl MusigWasm {
 #[wasm_bindgen]
 pub struct MusigWasmSignatureAggregator {
     musig: MusigSession<Bn256>,
-    signatures: Vec::<Fs>,
+    signatures: Vec<Fs>,
 }
 
 #[wasm_bindgen]
@@ -408,7 +421,8 @@ impl MusigWasmSignatureAggregator {
 
     #[wasm_bindgen]
     pub fn get_signature(&self) -> Result<Vec<u8>, JsValue> {
-        let signature = self.musig
+        let signature = self
+            .musig
             .aggregate_signature(&self.signatures)
             .map_err(MusigWasmFormats::map_musig_error_to_js)?;
 
@@ -423,7 +437,7 @@ impl MusigWasmSignatureAggregator {
 
 #[cfg(test)]
 mod musig_wasm_unit_tests {
-    use crate::musig_wasm::{MusigWasmUtils, MusigWasmFormats};
+    use crate::musig_wasm::{MusigWasmFormats, MusigWasmUtils};
 
     #[test]
     fn read_write() {

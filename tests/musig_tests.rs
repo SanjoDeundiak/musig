@@ -1,11 +1,11 @@
 #[cfg(test)]
 mod musig_tests {
+    use bellman::pairing::bn256::Bn256;
+    use franklin_crypto::alt_babyjubjub::{AltJubjubBn256, FixedGenerators};
+    use franklin_crypto::eddsa::{PrivateKey, PublicKey, Seed};
     use musig::musig::{MusigSession, MusigVerifier};
     use musig::musig_hash::Sha256HStar;
     use rand::{thread_rng, Rng};
-    use franklin_crypto::eddsa::{PrivateKey, PublicKey, Seed};
-    use franklin_crypto::alt_babyjubjub::{FixedGenerators, AltJubjubBn256};
-    use bellman::pairing::bn256::Bn256;
 
     struct SplitIterator<'a, T> {
         index: usize,
@@ -14,12 +14,11 @@ mod musig_tests {
     }
 
     impl<'a, T> SplitIterator<'a, T> {
-        fn new(left: &'a mut [T],
-               right: &'a mut [T]) -> SplitIterator<'a, T> {
+        fn new(left: &'a mut [T], right: &'a mut [T]) -> SplitIterator<'a, T> {
             SplitIterator {
                 index: 0,
                 left,
-                right
+                right,
             }
         }
 
@@ -28,11 +27,9 @@ mod musig_tests {
 
             if self.index < self.left.len() {
                 res = Some(&mut self.left[self.index]);
-            }
-            else if self.index < self.left.len() + self.right.len() {
+            } else if self.index < self.left.len() + self.right.len() {
                 res = Some(&mut self.right[self.index - self.left.len()]);
-            }
-            else {
+            } else {
                 res = None
             }
 
@@ -49,18 +46,24 @@ mod musig_tests {
         unsafe {
             assert!(mid < len);
 
-            (SplitIterator::new(std::slice::from_raw_parts_mut(ptr, mid), std::slice::from_raw_parts_mut(ptr.add(mid + 1),  len - mid - 1)),
-             &mut *ptr.add(mid))
+            (
+                SplitIterator::new(
+                    std::slice::from_raw_parts_mut(ptr, mid),
+                    std::slice::from_raw_parts_mut(ptr.add(mid + 1), len - mid - 1),
+                ),
+                &mut *ptr.add(mid),
+            )
         }
     }
 
     type E = Bn256;
 
-    fn create_sessions(rng: &mut impl Rng,
-                       n: usize,
-                       generator: FixedGenerators,
-                       params: &AltJubjubBn256) -> (Vec<MusigSession<E>>,
-                                               Vec<PrivateKey<E>>) {
+    fn create_sessions(
+        rng: &mut impl Rng,
+        n: usize,
+        generator: FixedGenerators,
+        params: &AltJubjubBn256,
+    ) -> (Vec<MusigSession<E>>, Vec<PrivateKey<E>>) {
         let mut participants_sk: Vec<PrivateKey<E>> = Vec::new();
         let mut participants_pk: Vec<PublicKey<E>> = Vec::new();
 
@@ -82,15 +85,18 @@ mod musig_tests {
 
             let seed = Seed::<Bn256>(rng.gen());
 
-            let session: MusigSession<E> = MusigSession::new(Box::new(Sha256HStar {}),
-                                                             Box::new(Sha256HStar {}),
-                                                             Box::new(Sha256HStar {}),
-                                                             Box::new(Sha256HStar {}),
-                                                             generator,
-                                                             AltJubjubBn256::new(),
-                                                             participants_copy,
-                                                             seed,
-                                                             i).expect("");
+            let session: MusigSession<E> = MusigSession::new(
+                Box::new(Sha256HStar {}),
+                Box::new(Sha256HStar {}),
+                Box::new(Sha256HStar {}),
+                Box::new(Sha256HStar {}),
+                generator,
+                AltJubjubBn256::new(),
+                participants_copy,
+                seed,
+                i,
+            )
+            .expect("");
 
             sessions.push(session);
         }
@@ -143,20 +149,26 @@ mod musig_tests {
                     None => break,
                 };
 
-                session.set_r_pub(r_pub.clone(), mid.get_self_index()).expect("");
+                session
+                    .set_r_pub(r_pub.clone(), mid.get_self_index())
+                    .expect("");
             }
         }
 
         let mut size = rng.gen();
         size = size % 1024 + 32;
 
-        let mut msg: Vec<u8> = vec!(0; size);
+        let mut msg: Vec<u8> = vec![0; size];
         rng.fill_bytes(&mut msg);
 
         let mut s = Vec::new();
 
         for i in 0..n {
-            s.push((&mut sessions[i]).sign(&participants_sk[i], &msg).expect(""));
+            s.push(
+                (&mut sessions[i])
+                    .sign(&participants_sk[i], &msg)
+                    .expect(""),
+            );
         }
 
         let signature = sessions[0].aggregate_signature(&s).expect("");
@@ -168,7 +180,8 @@ mod musig_tests {
             assert!(signature.s.eq(&signature1.s));
         }
 
-        let verifier = MusigVerifier::<E>::new(Box::new(Sha256HStar {}), generator, AltJubjubBn256::new());
+        let verifier =
+            MusigVerifier::<E>::new(Box::new(Sha256HStar {}), generator, AltJubjubBn256::new());
 
         assert!(verifier.verify_signature(&signature, &msg, &aggregated_public_key));
     }
