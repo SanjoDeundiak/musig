@@ -17,7 +17,7 @@ Preliminaries:
 ### Rust
 
 1. Each signer (i) creates MusigSession instance
-    ```rust
+    ```rs
     type E = Bn256;
     let params = AltJubjubBn256::new();
     let generator = FixedGenerators::SpendingKeyGenerator;
@@ -37,20 +37,20 @@ Preliminaries:
     ```
 
 1. Get aggregated public key which will be used for verification
-    ```rust
+    ```rs
     let aggregated_public_key = session_i.get_aggregated_public_key().clone();
     ```
    
    Each signer will get same value from this function
 
 1. Each signer (i) should upload its commitment (t) to the server
-    ```rust
+    ```rs
     let t_i = session_i.get_t();
     // Send t to the server 
     ```
    
 1. Each signer (i) should get commitments (t) from all of other signers
-    ```rust
+    ```rs
     for j in 0..n {
         if j == i {
             continue;
@@ -60,13 +60,13 @@ Preliminaries:
     ```
    
 1. Each signer (i) reveals his R (sends it to the server)
-    ```rust
+    ```rs
     let r_pub_i = session_i.get_r_pub();
     // Send r_pub_i to the server
     ``` 
 
 1. Each signer (i) should get R from all of other signers
-    ```rust
+    ```rs
     for j in 0..n {
         if j == i {
             continue;
@@ -76,18 +76,18 @@ Preliminaries:
     ```
    
 1. Each signer (i) produces his part of the signature (s) and pushes it to the server
-    ```rust
+    ```rs
     let s_i = session_i.sign(&signer_private_key_i, &message).expect("");
     // Send s_i to the server
     ```
    
 1. Any (or all) of the signers can now aggregate parts into final signature
-    ```rust
+    ```rs
     let signature = session.aggregate_signature([s0, s1, ..]).expect("");
     ```
    
 1. Signature can now be verified
-    ```rust
+    ```rs
     let verifier = MusigVerifier::<E>::new(Box::new(Sha256HStar {}), // Message hash
                                            generator,
                                            AltJubjubBn256::new());
@@ -113,22 +113,22 @@ Preliminaries:
     ```
 
 1. Get aggregated public key which will be used for verification
-    ```rust
+    ```js
     let aggregatedPublicKey = sessions_i.get_aggregated_public_key();
     ```
    
    Each signer will get same value from this function
 
 1. Each signer (i) should upload its commitment (t) to the server
-    ```rust
+    ```js
     let t_i = session_i.get_t();
     // Send t to the server 
     ```
    
 1. Each signer (i) should get commitments (t) from all of other signers
-    ```rust
+    ```js
     for (let j = 0; j < n; j++) {
-        if j == i {
+        if (j === i) {
             continue;
         }
         session_i.set_t(t_j, j); 
@@ -136,15 +136,15 @@ Preliminaries:
     ```
    
 1. Each signer (i) reveals his R (sends it to the server)
-    ```rust
+    ```js
     let r_pub_i = session_i.get_r_pub();
     // Send r_pub_i to the server
     ``` 
 
 1. Each signer (i) should get R from all of other signers
-    ```rust
+    ```js
     for (let j = 0; j < n; j++) {
-        if j == i {
+        if (j === i) {
             continue;
         }
         session_i.set_r_pub(r_pub_j, j); 
@@ -152,13 +152,13 @@ Preliminaries:
     ```
    
 1. Each signer (i) produces his part of the signature (s) and pushes it to the server
-    ```rust
-    let s_i = session_i.sign(signer_private_key_i, &message);
+    ```js
+    let s_i = session_i.sign(signer_private_key_i, message);
     // Send s_i to the server
     ```
    
 1. Any (or all) of the signers can now aggregate parts into final signature
-    ```rust
+    ```js
     let aggregator = sessions_i.build_signature_aggregator();
     for (let i = 0; i < n; i++) {
         aggregator.add_signature(s_i);
@@ -168,7 +168,7 @@ Preliminaries:
     ```
    
 1. Signature can now be verified
-    ```rust
+    ```js
     let verifier = MusigWasmVerifier.new();
     
     let verified = verifier.verify(message, aggregatedPublicKey, signature);
