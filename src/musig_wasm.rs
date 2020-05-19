@@ -404,8 +404,6 @@ mod musig_wasm_unit_tests {
 
     #[test]
     fn read_write() {
-        let rng = &mut rand::thread_rng();
-
         let seed = [1usize; 8];
 
         let sk_data = MusigWasmUtils::generate_private_key(&seed).expect("");
