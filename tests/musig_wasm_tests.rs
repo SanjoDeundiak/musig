@@ -1,7 +1,9 @@
 #[cfg(test)]
 mod musig_wasm_tests {
     use byte_slice_cast::*;
-    use musig::musig_wasm::{MusigWasm, MusigWasmBuilder, MusigWasmUtils, MusigWasmVerifier, MusigHash};
+    use musig::musig_wasm::{
+        MusigHash, MusigWasm, MusigWasmBuilder, MusigWasmUtils, MusigWasmVerifier,
+    };
     use rand::{thread_rng, Rng};
 
     struct SplitIterator<'a, T> {

@@ -87,7 +87,9 @@ impl MusigWasmVerifier {
 
         let sig = Signature::<Bn256> { r, s };
 
-        Ok(self.verifier.verify_signature(&sig, msg, &public_key, &JUBJUB_PARAMS))
+        Ok(self
+            .verifier
+            .verify_signature(&sig, msg, &public_key, &JUBJUB_PARAMS))
     }
 }
 
@@ -98,7 +100,11 @@ impl MusigWasmFormats {
     fn read_fs(reader: &[u8], be: bool) -> Result<Fs, JsValue> {
         let mut fs_repr = FsRepr::default();
 
-        let res = if be { fs_repr.read_be(reader) } else { fs_repr.read_le(reader) };
+        let res = if be {
+            fs_repr.read_be(reader)
+        } else {
+            fs_repr.read_le(reader)
+        };
 
         res.map_err(MusigWasmFormats::map_error_to_js)?;
 
@@ -116,7 +122,11 @@ impl MusigWasmFormats {
     fn write_fs<W: std::io::Write>(fs: &Fs, be: bool, writer: W) -> Result<(), JsValue> {
         let repr = fs.into_repr();
 
-        let res = if be { repr.write_be(writer) } else { repr.write_le(writer) };
+        let res = if be {
+            repr.write_be(writer)
+        } else {
+            repr.write_le(writer)
+        };
 
         res.map_err(MusigWasmFormats::map_error_to_js)
     }

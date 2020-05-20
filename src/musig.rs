@@ -204,7 +204,12 @@ impl<E: JubjubEngine> MusigSession<E> {
         Ok(())
     }
 
-    pub fn set_r_pub(&mut self, r_pub: PublicKey<E>, index: usize, params: &E::Params) -> Result<(), MusigError> {
+    pub fn set_r_pub(
+        &mut self,
+        r_pub: PublicKey<E>,
+        index: usize,
+        params: &E::Params,
+    ) -> Result<(), MusigError> {
         if self.self_index == index {
             return Err(MusigError::AssigningRPubToSelfIsForbidden);
         }
@@ -292,10 +297,7 @@ pub struct MusigVerifier {
 }
 
 impl MusigVerifier {
-    pub fn new(
-        msg_hash: Box<dyn MsgHash>,
-        generator: FixedGenerators,
-    ) -> MusigVerifier {
+    pub fn new(msg_hash: Box<dyn MsgHash>, generator: FixedGenerators) -> MusigVerifier {
         MusigVerifier {
             msg_hash,
             generator,
@@ -311,11 +313,6 @@ impl MusigVerifier {
     ) -> bool {
         let msg_hash = self.msg_hash.hash(msg);
 
-        aggregated_public_key.verify_musig_sha256(
-            &msg_hash,
-            signature,
-            self.generator,
-            params,
-        )
+        aggregated_public_key.verify_musig_sha256(&msg_hash, signature, self.generator, params)
     }
 }

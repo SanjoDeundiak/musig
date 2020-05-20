@@ -180,8 +180,7 @@ mod musig_tests {
             assert!(signature.s.eq(&signature1.s));
         }
 
-        let verifier =
-            MusigVerifier::new(Box::new(Sha256HStar {}), generator);
+        let verifier = MusigVerifier::new(Box::new(Sha256HStar {}), generator);
 
         assert!(verifier.verify_signature(&signature, &msg, &aggregated_public_key, &params));
     }
