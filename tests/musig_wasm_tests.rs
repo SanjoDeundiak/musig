@@ -1,7 +1,7 @@
 #[cfg(test)]
 mod musig_wasm_tests {
     use byte_slice_cast::*;
-    use musig::musig_wasm::{MusigWasm, MusigWasmBuilder, MusigWasmUtils, MusigWasmVerifier};
+    use musig::musig_wasm::{MusigWasm, MusigWasmBuilder, MusigWasmUtils, MusigWasmVerifier, MusigHash};
     use rand::{thread_rng, Rng};
 
     struct SplitIterator<'a, T> {
@@ -59,7 +59,6 @@ mod musig_wasm_tests {
 
         // Everybody generates key pairs
         for _ in 0..n {
-            // FIXME: Hard code
             let mut seed = [0u8; 32];
 
             rng.fill_bytes(&mut seed);
@@ -166,7 +165,7 @@ mod musig_wasm_tests {
 
         let signature = signature_aggregator.get_signature().expect("");
 
-        let verifier = MusigWasmVerifier::new();
+        let verifier = MusigWasmVerifier::new(MusigHash::SHA256);
 
         let verified = verifier
             .verify(&msg, &aggregated_public_key, &signature)

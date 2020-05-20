@@ -91,7 +91,7 @@ mod musig_tests {
                 Box::new(Sha256HStar {}),
                 Box::new(Sha256HStar {}),
                 generator,
-                AltJubjubBn256::new(),
+                params,
                 participants_copy,
                 seed,
                 i,
@@ -150,7 +150,7 @@ mod musig_tests {
                 };
 
                 session
-                    .set_r_pub(r_pub.clone(), mid.get_self_index())
+                    .set_r_pub(r_pub.clone(), mid.get_self_index(), &params)
                     .expect("");
             }
         }
@@ -181,9 +181,9 @@ mod musig_tests {
         }
 
         let verifier =
-            MusigVerifier::<E>::new(Box::new(Sha256HStar {}), generator, AltJubjubBn256::new());
+            MusigVerifier::new(Box::new(Sha256HStar {}), generator);
 
-        assert!(verifier.verify_signature(&signature, &msg, &aggregated_public_key));
+        assert!(verifier.verify_signature(&signature, &msg, &aggregated_public_key, &params));
     }
 
     #[test]

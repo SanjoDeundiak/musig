@@ -30,7 +30,7 @@ Preliminaries:
                                            Box::new(Sha256HStar {}), // Signature hash
                                            Box::new(Sha256HStar {}), // MessageHash
                                            generator,
-                                           AltJubjubBn256::new(),
+                                           &params,
                                            [public_key0, public_key1, ..],
                                            seed,
                                            i).expect("");
@@ -71,7 +71,7 @@ Preliminaries:
         if j == i {
             continue;
         }
-        session_i.set_r_pub(r_pub_j, j).expect("");
+        session_i.set_r_pub(r_pub_j, j, &params).expect("");
     }
     ```
    
@@ -88,11 +88,10 @@ Preliminaries:
    
 1. Signature can now be verified
     ```rs
-    let verifier = MusigVerifier::<E>::new(Box::new(Sha256HStar {}), // Message hash
-                                           generator,
-                                           AltJubjubBn256::new());
+    let verifier = MusigVerifier::new(Box::new(Sha256HStar {}), // Message hash
+                                      generator);
    
-    verifier.verify_signature(&signature, &message, &aggregated_public_key);
+    verifier.verify_signature(&signature, &message, &aggregated_public_key, &params);
     ```
    
 ### JS
@@ -100,9 +99,9 @@ Preliminaries:
 1. Each signer (i) creates MusigSession instance
     ```js
     import * as wasm from "musig";
-    import {MusigWasmVerifier, MusigWasm} from "musig";
+    import {MusigWasmVerifier, MusigWasm, MusigWasmBuilder, MusigHash} from "musig";
     
-    let builder_i = new wasm.MusigWasmBuilder();
+    let builder_i = new MusigWasmBuilder();
     for (let j = 0; j < n; j++) {
         builder_i.addParticipant(publicKey_i, i === j);
     }
@@ -169,7 +168,7 @@ Preliminaries:
    
 1. Signature can now be verified
     ```js
-    let verifier = MusigWasmVerifier.new();
+    let verifier = new MusigWasmVerifier(MusigHash.SHA256);
     
     let verified = verifier.verify(message, aggregatedPublicKey, signature);
     ```

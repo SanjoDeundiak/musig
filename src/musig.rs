@@ -57,7 +57,6 @@ pub struct MusigSession<E: JubjubEngine> {
     commitment_hash: Box<dyn CommitmentHash<E>>,
     signature_hash: Box<dyn SignatureHash<E>>,
     msg_hash: Box<dyn MsgHash>,
-    params: E::Params,
     participants: Vec<PublicKey<E>>,
     self_index: usize,
     aggregated_public_key: PublicKey<E>,
@@ -82,14 +81,12 @@ impl<E: JubjubEngine> MusigSession<E> {
         signature_hash: Box<dyn SignatureHash<E>>,
         msg_hash: Box<dyn MsgHash>,
         generator: FixedGenerators,
-        params: E::Params,
+        params: &E::Params,
         participants: Vec<PublicKey<E>>,
         seed: Seed<E>,
         self_index: usize,
     ) -> Result<MusigSession<E>, MusigError> {
         let number_of_participants = participants.len();
-
-        // FIXME: Checks
 
         if self_index >= number_of_participants {
             return Err(MusigError::SelfIndexOutOfBounds);
@@ -99,11 +96,11 @@ impl<E: JubjubEngine> MusigSession<E> {
             &participants,
             &*aggregate_hash,
             self_index,
-            &params,
+            params,
         );
 
         let (r_self, r_pub_self, t) =
-            MusigSession::<E>::generate_commitment(seed, &*commitment_hash, &params, generator);
+            MusigSession::<E>::generate_commitment(seed, &*commitment_hash, params, generator);
 
         let mut t_participants = vec![None; number_of_participants];
         t_participants[self_index] = Some(t);
@@ -115,7 +112,6 @@ impl<E: JubjubEngine> MusigSession<E> {
             commitment_hash,
             signature_hash,
             msg_hash,
-            params,
             participants,
             self_index,
             aggregated_public_key,
@@ -143,6 +139,7 @@ impl<E: JubjubEngine> MusigSession<E> {
         let mut a_self = None;
 
         for i in 0..participants.len() {
+            // TODO: Optimize
             let ai = aggregate_hash.hash(&participants, &participants[i]);
 
             x = x.add(&participants[i].0.mul(ai, params), params);
@@ -207,7 +204,7 @@ impl<E: JubjubEngine> MusigSession<E> {
         Ok(())
     }
 
-    pub fn set_r_pub(&mut self, r_pub: PublicKey<E>, index: usize) -> Result<(), MusigError> {
+    pub fn set_r_pub(&mut self, r_pub: PublicKey<E>, index: usize, params: &E::Params) -> Result<(), MusigError> {
         if self.self_index == index {
             return Err(MusigError::AssigningRPubToSelfIsForbidden);
         }
@@ -231,7 +228,7 @@ impl<E: JubjubEngine> MusigSession<E> {
         }
 
         self.r_pub_aggregated = PublicKey {
-            0: self.r_pub_aggregated.0.add(&r_pub.0, &self.params),
+            0: self.r_pub_aggregated.0.add(&r_pub.0, params),
         };
 
         self.r_pub_participants[index] = Some(r_pub);
@@ -289,30 +286,28 @@ impl<E: JubjubEngine> MusigSession<E> {
     }
 }
 
-pub struct MusigVerifier<E: JubjubEngine> {
+pub struct MusigVerifier {
     msg_hash: Box<dyn MsgHash>,
-    params: E::Params,
     generator: FixedGenerators,
 }
 
-impl<E: JubjubEngine> MusigVerifier<E> {
+impl MusigVerifier {
     pub fn new(
         msg_hash: Box<dyn MsgHash>,
         generator: FixedGenerators,
-        params: E::Params,
-    ) -> MusigVerifier<E> {
+    ) -> MusigVerifier {
         MusigVerifier {
             msg_hash,
-            params,
             generator,
         }
     }
 
-    pub fn verify_signature(
+    pub fn verify_signature<E: JubjubEngine>(
         &self,
         signature: &Signature<E>,
         msg: &[u8],
         aggregated_public_key: &PublicKey<E>,
+        params: &E::Params,
     ) -> bool {
         let msg_hash = self.msg_hash.hash(msg);
 
@@ -320,7 +315,7 @@ impl<E: JubjubEngine> MusigVerifier<E> {
             &msg_hash,
             signature,
             self.generator,
-            &self.params,
+            params,
         )
     }
 }
