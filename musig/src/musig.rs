@@ -65,10 +65,12 @@ pub struct MusigSession<E: JubjubEngine> {
     r_self: PrivateKey<E>,
     r_pub_aggregated: PublicKey<E>,
 
-    t_participants: Vec<Option<Vec<u8>>>,
+    t_others: Vec<Option<Vec<u8>>>,
+    t_self: Vec<u8>,
     t_count: usize,
 
-    r_pub_participants: Vec<Option<PublicKey<E>>>,
+    r_pub_others: Vec<Option<PublicKey<E>>>,
+    r_pub_self: PublicKey<E>,
     r_pub_count: usize,
 
     performed_sign: bool,
@@ -102,12 +104,6 @@ impl<E: JubjubEngine> MusigSession<E> {
         let (r_self, r_pub_self, t) =
             MusigSession::<E>::generate_commitment(seed, &*commitment_hash, params, generator);
 
-        let mut t_participants = vec![None; number_of_participants];
-        t_participants[self_index] = Some(t);
-
-        let mut r_pub_participants = vec![None; number_of_participants];
-        r_pub_participants[self_index] = Some(r_pub_self.clone());
-
         let session = MusigSession {
             commitment_hash,
             signature_hash,
@@ -117,10 +113,12 @@ impl<E: JubjubEngine> MusigSession<E> {
             aggregated_public_key,
             a_self,
             r_self,
-            r_pub_aggregated: r_pub_self,
-            t_participants,
+            r_pub_aggregated: r_pub_self.clone(),
+            t_others: vec![None; number_of_participants],
+            t_self: t,
             t_count: 1,
-            r_pub_participants,
+            r_pub_others: vec![None; number_of_participants],
+            r_pub_self,
             r_pub_count: 1,
             performed_sign: false,
         };
@@ -174,15 +172,11 @@ impl<E: JubjubEngine> MusigSession<E> {
     }
 
     pub fn get_t(&self) -> &[u8] {
-        self.t_participants[self.self_index]
-            .as_ref()
-            .expect("Commitment is absent")
+        &self.t_self
     }
 
     pub fn get_r_pub(&self) -> &PublicKey<E> {
-        self.r_pub_participants[self.self_index]
-            .as_ref()
-            .expect("R_pub is absent")
+        &self.r_pub_self
     }
 
     pub fn get_aggregated_public_key(&self) -> &PublicKey<E> {
@@ -194,11 +188,11 @@ impl<E: JubjubEngine> MusigSession<E> {
             return Err(MusigError::AssigningCommitmentToSelfIsForbidden);
         }
 
-        if self.t_participants[index].is_some() {
+        if self.t_others[index].is_some() {
             return Err(MusigError::DuplicateCommitmentAssignment);
         }
 
-        self.t_participants[index] = Some(Vec::from(t));
+        self.t_others[index] = Some(Vec::from(t));
         self.t_count += 1;
 
         Ok(())
@@ -218,13 +212,13 @@ impl<E: JubjubEngine> MusigSession<E> {
             return Err(MusigError::AssigningRPubBeforeSettingAllCommitmentsIsForbidden);
         }
 
-        if self.r_pub_participants[index].is_some() {
+        if self.r_pub_others[index].is_some() {
             return Err(MusigError::DuplicateRPubAssignment);
         }
 
         let t_real = self.commitment_hash.hash(&r_pub);
 
-        if !self.t_participants[index]
+        if !self.t_others[index]
             .as_ref()
             .expect("Commitment is absent during check")
             .eq(&t_real)
@@ -236,7 +230,7 @@ impl<E: JubjubEngine> MusigSession<E> {
             0: self.r_pub_aggregated.0.add(&r_pub.0, params),
         };
 
-        self.r_pub_participants[index] = Some(r_pub);
+        self.r_pub_others[index] = Some(r_pub);
         self.r_pub_count += 1;
 
         Ok(())
