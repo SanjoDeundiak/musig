@@ -2,8 +2,8 @@
 
 1. Each signer (i) creates MusigSession instance
     ```javascript
-    import * as wasm from "musig";
-    import {MusigWasmVerifier, MusigWasm, MusigWasmBuilder, MusigHash} from "musig";
+    import * as wasm from "musig_wasm";
+    import {MusigWasmVerifier, MusigWasm, MusigWasmBuilder, MusigHashAlg} from "musig_wasm";
     
     let builder_i = new MusigWasmBuilder();
     for (let j = 0; j < n; j++) {
@@ -72,7 +72,7 @@
    
 1. Signature can now be verified
     ```javascript
-    let verifier = new MusigWasmVerifier(MusigHash.SHA256);
+    let verifier = new MusigWasmVerifier(MusigHashAlg.SHA256);
     
     let verified = verifier.verify(message, aggregatedPublicKey, signature);
     ```
