@@ -46,11 +46,7 @@ impl Builder {
 
         let hashed_msg = match self.hash {
             HashAlg::SHA256 => {
-                let mut sha256 = Sha256::default();
-
-                sha256.input(msg);
-
-                sha256.result().to_vec()
+                Sha256::digest(msg).to_vec()
             }
         };
 

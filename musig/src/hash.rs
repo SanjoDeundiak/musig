@@ -68,19 +68,12 @@ impl<E: JubjubEngine> CommitmentHash<E> for Sha256HStar {
 
         Sha256HStar::write_public_key(r_pub, &mut concatenated);
 
-        let mut hasher = Sha256::default();
-        hasher.input(&concatenated);
-
-        hasher.result().to_vec()
+        Sha256::digest(&concatenated).to_vec()
     }
 }
 
 impl MsgHash for Sha256HStar {
     fn hash(&self, m: &[u8]) -> Vec<u8> {
-        let mut hash = Sha256::default();
-
-        hash.input(m);
-
-        hash.result().to_vec()
+        Sha256::digest(m).to_vec()
     }
 }
