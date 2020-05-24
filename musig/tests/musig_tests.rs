@@ -22,15 +22,13 @@ mod musig_tests {
         }
 
         fn next(&mut self) -> Option<&mut T> {
-            let res;
-
-            if self.index < self.left.len() {
-                res = Some(&mut self.left[self.index]);
+            let res = if self.index < self.left.len() {
+                Some(&mut self.left[self.index])
             } else if self.index < self.left.len() + self.right.len() {
-                res = Some(&mut self.right[self.index - self.left.len()]);
+                Some(&mut self.right[self.index - self.left.len()])
             } else {
-                res = None
-            }
+                None
+            };
 
             self.index += 1;
 
