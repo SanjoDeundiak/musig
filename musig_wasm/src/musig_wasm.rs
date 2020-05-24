@@ -56,7 +56,7 @@ impl MusigWasm {
 
     #[wasm_bindgen(js_name = "getT")]
     pub fn get_t(&self) -> Vec<u8> {
-        self.musig.get_t().clone()
+        self.musig.get_t().to_vec()
     }
 
     #[wasm_bindgen(js_name = "getRPub")]

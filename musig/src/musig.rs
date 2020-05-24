@@ -173,7 +173,7 @@ impl<E: JubjubEngine> MusigSession<E> {
         self.self_index
     }
 
-    pub fn get_t(&self) -> &Vec<u8> {
+    pub fn get_t(&self) -> &[u8] {
         self.t_participants[self.self_index]
             .as_ref()
             .expect("Commitment is absent")
