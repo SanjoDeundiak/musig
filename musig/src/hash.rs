@@ -4,6 +4,8 @@ use franklin_crypto::jubjub::JubjubEngine;
 use franklin_crypto::util::sha256_hash_to_scalar;
 use sha2::{Digest, Sha256};
 
+pub const PACKED_POINT_SIZE: usize = 32;
+
 pub trait AggregateHash<E: JubjubEngine> {
     fn hash(&self, pubs: &[PublicKey<E>], last: &PublicKey<E>) -> E::Fs;
 }
@@ -26,7 +28,7 @@ pub struct Sha256HStar {}
 impl Sha256HStar {
     fn write_public_key<E: JubjubEngine>(public_key: &PublicKey<E>, dest: &mut Vec<u8>) {
         let (pk_x, _) = public_key.0.into_xy();
-        let mut pk_x_bytes = [0u8; 32];
+        let mut pk_x_bytes = [0u8; PACKED_POINT_SIZE];
         pk_x.into_repr()
             .write_le(&mut pk_x_bytes[..])
             .expect("has serialized pk_x");
@@ -42,7 +44,7 @@ impl<E: JubjubEngine> SignatureHash<E> for Sha256HStar {
         Sha256HStar::write_public_key(r_pub, &mut concatenated);
 
         let mut msg_padded: Vec<u8> = m.to_vec();
-        msg_padded.resize(32, 0u8);
+        msg_padded.resize(PACKED_POINT_SIZE, 0u8);
 
         sha256_hash_to_scalar::<E>(&[], &concatenated, &msg_padded)
     }
