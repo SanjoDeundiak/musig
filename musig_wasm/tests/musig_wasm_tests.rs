@@ -1,9 +1,10 @@
-#[cfg(test)]
 mod musig_wasm_tests {
     use byte_slice_cast::*;
-    use musig::musig_wasm::{
-        MusigHash, MusigWasm, MusigWasmBuilder, MusigWasmUtils, MusigWasmVerifier,
-    };
+    use musig_wasm::musig_wasm::MusigWasm;
+    use musig_wasm::hash_alg::HashAlg;
+    use musig_wasm::builder::Builder;
+    use musig_wasm::utils::Utils;
+    use musig_wasm::signature_verifier::SignatureVerifier;
     use rand::{thread_rng, Rng};
 
     struct SplitIterator<'a, T> {
@@ -67,9 +68,9 @@ mod musig_wasm_tests {
 
             let s = seed.as_slice_of::<usize>().expect("");
 
-            let sk = MusigWasmUtils::generate_private_key(s).expect("");
+            let sk = Utils::generate_private_key(s).expect("");
 
-            let pk = MusigWasmUtils::extract_public_key(&sk).expect("");
+            let pk = Utils::extract_public_key(&sk).expect("");
 
             participants_sk.push(sk);
             participants_pk.push(pk);
@@ -79,7 +80,7 @@ mod musig_wasm_tests {
         let mut sessions: Vec<MusigWasm> = Vec::new();
 
         for i in 0..n {
-            let mut builder = MusigWasmBuilder::new();
+            let mut builder = Builder::new();
 
             builder.derive_seed(&participants_sk[i], msg).expect("");
 
@@ -167,7 +168,7 @@ mod musig_wasm_tests {
 
         let signature = signature_aggregator.get_signature().expect("");
 
-        let verifier = MusigWasmVerifier::new(MusigHash::SHA256);
+        let verifier = SignatureVerifier::new(HashAlg::SHA256);
 
         let verified = verifier
             .verify(&msg, &aggregated_public_key, &signature)

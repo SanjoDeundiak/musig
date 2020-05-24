@@ -1,10 +1,9 @@
-#[cfg(test)]
 mod musig_tests {
     use bellman::pairing::bn256::Bn256;
     use franklin_crypto::alt_babyjubjub::{AltJubjubBn256, FixedGenerators};
     use franklin_crypto::eddsa::{PrivateKey, PublicKey, Seed};
     use musig::musig::{MusigSession, MusigVerifier};
-    use musig::musig_hash::Sha256HStar;
+    use musig::hash::Sha256HStar;
     use rand::{thread_rng, Rng};
 
     struct SplitIterator<'a, T> {

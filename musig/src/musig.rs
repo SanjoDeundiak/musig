@@ -1,4 +1,4 @@
-use crate::musig_hash::{AggregateHash, CommitmentHash, MsgHash, SignatureHash};
+use crate::hash::{AggregateHash, CommitmentHash, MsgHash, SignatureHash};
 use bellman::pairing::ff::Field;
 use franklin_crypto::eddsa::{PrivateKey, PublicKey, Seed, Signature};
 use franklin_crypto::jubjub::edwards::Point;
@@ -85,7 +85,7 @@ impl<E: JubjubEngine> MusigSession<E> {
         participants: Vec<PublicKey<E>>,
         seed: Seed<E>,
         self_index: usize,
-    ) -> Result<MusigSession<E>, MusigError> {
+    ) -> Result<Self, MusigError> {
         let number_of_participants = participants.len();
 
         if self_index >= number_of_participants {
@@ -297,7 +297,7 @@ pub struct MusigVerifier {
 }
 
 impl MusigVerifier {
-    pub fn new(msg_hash: Box<dyn MsgHash>, generator: FixedGenerators) -> MusigVerifier {
+    pub fn new(msg_hash: Box<dyn MsgHash>, generator: FixedGenerators) -> Self {
         MusigVerifier {
             msg_hash,
             generator,
