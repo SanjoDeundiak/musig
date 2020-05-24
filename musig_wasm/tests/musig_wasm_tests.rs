@@ -120,12 +120,7 @@ mod musig_wasm_tests {
 
             let t = mid.get_t();
 
-            loop {
-                let session = match iterator.next() {
-                    Some(e) => e,
-                    None => break,
-                };
-
+            for session in iterator {
                 session.set_t(&t, mid.get_self_index()).expect("");
             }
         }
@@ -136,12 +131,7 @@ mod musig_wasm_tests {
 
             let r_pub = mid.get_r_pub().expect("");
 
-            loop {
-                let session = match iterator.next() {
-                    Some(e) => e,
-                    None => break,
-                };
-
+            for session in iterator {
                 session.set_r_pub(&r_pub, mid.get_self_index()).expect("");
             }
         }
