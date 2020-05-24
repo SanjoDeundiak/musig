@@ -14,7 +14,7 @@ pub struct Utils {}
 impl Utils {
     #[wasm_bindgen(js_name = "generatePrivateKey")]
     pub fn generate_private_key(seed: &[usize]) -> Result<Vec<u8>, JsValue> {
-        let mut rng: StdRng = SeedableRng::from_seed(seed);
+        let mut rng = StdRng::from_seed(seed);
 
         let private_key = PrivateKey::<Bn256>(rng.gen());
 
