@@ -24,10 +24,10 @@ pub trait MsgHash {
     fn hash(&self, m: &[u8]) -> Vec<u8>;
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Default)]
 pub struct Sha256HStar {}
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Default)]
 pub struct Sha256HStarAggregate {
     aggregate_hash_pubs: Vec<u8>,
 }

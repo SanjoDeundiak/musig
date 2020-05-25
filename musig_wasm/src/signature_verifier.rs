@@ -13,6 +13,12 @@ pub struct SignatureVerifier {
     verifier: MusigVerifier<Bn256, DefaultHasher<Bn256>>,
 }
 
+impl Default for SignatureVerifier {
+    fn default() -> Self {
+        SignatureVerifier::new()
+    }
+}
+
 #[wasm_bindgen(js_class = "MusigWasmVerifier")]
 impl SignatureVerifier {
     #[wasm_bindgen(constructor)]

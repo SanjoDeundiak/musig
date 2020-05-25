@@ -132,10 +132,10 @@ impl<E: JubjubEngine, H: MusigHasher<E>> MusigSession<E, H> {
 
         hasher.aggregate_hash_set_pubs(&participants);
 
-        for i in 0..participants.len() {
-            let ai = hasher.aggregate_hash(&participants[i]);
+        for (i, participant) in participants.iter().enumerate() {
+            let ai = hasher.aggregate_hash(participant);
 
-            x = x.add(&participants[i].0.mul(ai, params), params);
+            x = x.add(&participant.0.mul(ai, params), params);
 
             if i == self_index {
                 a_self = Some(ai);
