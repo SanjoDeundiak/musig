@@ -1,14 +1,14 @@
-use musig::musig::MusigError;
 use bellman::pairing::bn256::Bn256;
 use bellman::pairing::ff::{PrimeField, PrimeFieldRepr};
 use franklin_crypto::alt_babyjubjub::edwards::Point;
 use franklin_crypto::alt_babyjubjub::fs::{Fs, FsRepr};
-use franklin_crypto::alt_babyjubjub::Unknown;
 use franklin_crypto::alt_babyjubjub::AltJubjubBn256;
+use franklin_crypto::alt_babyjubjub::Unknown;
 use franklin_crypto::eddsa::{PrivateKey, PublicKey};
+use musig::musig::MusigError;
 use wasm_bindgen::prelude::*;
 
-pub(crate) struct WasmFormats { }
+pub(crate) struct WasmFormats {}
 
 impl WasmFormats {
     /// Fs
@@ -69,7 +69,10 @@ impl WasmFormats {
     }
 
     /// Public keys
-    pub(crate) fn read_public_key(reader: &[u8], params: &AltJubjubBn256) -> Result<PublicKey<Bn256>, JsValue> {
+    pub(crate) fn read_public_key(
+        reader: &[u8],
+        params: &AltJubjubBn256,
+    ) -> Result<PublicKey<Bn256>, JsValue> {
         let point = WasmFormats::read_point(reader, params)?;
 
         Ok(PublicKey::<Bn256>(point))
@@ -83,9 +86,12 @@ impl WasmFormats {
     }
 
     /// Points
-    pub(crate) fn read_point(reader: &[u8], params: &AltJubjubBn256) -> Result<Point<Bn256, Unknown>, JsValue> {
-        let p = Point::<Bn256, Unknown>::read(reader, params)
-            .map_err(WasmFormats::map_error_to_js)?;
+    pub(crate) fn read_point(
+        reader: &[u8],
+        params: &AltJubjubBn256,
+    ) -> Result<Point<Bn256, Unknown>, JsValue> {
+        let p =
+            Point::<Bn256, Unknown>::read(reader, params).map_err(WasmFormats::map_error_to_js)?;
 
         // this one is for a simple sanity check. In application purposes the pk will always be in a right group
         let order_check_pk = p.mul(Fs::char(), params);
@@ -100,9 +106,7 @@ impl WasmFormats {
         point: &Point<Bn256, Unknown>,
         writer: W,
     ) -> Result<(), JsValue> {
-        point
-            .write(writer)
-            .map_err(WasmFormats::map_error_to_js)
+        point.write(writer).map_err(WasmFormats::map_error_to_js)
     }
 
     /// Errors

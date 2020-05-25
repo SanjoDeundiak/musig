@@ -1,9 +1,9 @@
 mod musig_wasm_tests {
     use byte_slice_cast::*;
-    use musig_wasm::musig_wasm::MusigWasm;
     use musig_wasm::builder::Builder;
-    use musig_wasm::utils::Utils;
+    use musig_wasm::musig_wasm::MusigWasm;
     use musig_wasm::signature_verifier::SignatureVerifier;
+    use musig_wasm::utils::Utils;
     use rand::{thread_rng, Rng};
 
     fn create_sessions(rng: &mut impl Rng, msg: &[u8], n: usize) -> (Vec<MusigWasm>, Vec<Vec<u8>>) {

@@ -1,8 +1,8 @@
-use musig::musig::MusigSession;
-use musig::hash::{Sha256HStar, DefaultHasher, Sha256HStarAggregate};
 use bellman::pairing::bn256::Bn256;
 use franklin_crypto::alt_babyjubjub::FixedGenerators;
 use franklin_crypto::eddsa::{PublicKey, Seed};
+use musig::hash::{DefaultHasher, Sha256HStar, Sha256HStarAggregate};
+use musig::musig::MusigSession;
 use sha2::{Digest, Sha256};
 use wasm_bindgen::prelude::*;
 
@@ -75,10 +75,12 @@ impl Builder {
 
         let generator = FixedGenerators::SpendingKeyGenerator;
 
-        let hasher = DefaultHasher::new(Sha256HStarAggregate::new(),
-                                        Sha256HStar::new(),
-                                        Sha256HStar::new(),
-                                        Sha256HStar::new());
+        let hasher = DefaultHasher::new(
+            Sha256HStarAggregate::new(),
+            Sha256HStar::new(),
+            Sha256HStar::new(),
+            Sha256HStar::new(),
+        );
 
         let session = MusigSession::<Bn256, DefaultHasher<Bn256>>::new(
             hasher,
@@ -88,7 +90,7 @@ impl Builder {
             seed,
             self.self_index,
         )
-            .map_err(WasmFormats::map_error_to_js)?;
+        .map_err(WasmFormats::map_error_to_js)?;
 
         Ok(MusigWasm::new(session))
     }

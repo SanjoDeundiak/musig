@@ -1,11 +1,11 @@
-use musig::musig::MusigSession;
 use bellman::pairing::bn256::Bn256;
 use franklin_crypto::alt_babyjubjub::AltJubjubBn256;
-use wasm_bindgen::prelude::*;
 use lazy_static::lazy_static;
+use musig::musig::MusigSession;
+use wasm_bindgen::prelude::*;
 
-use crate::wasm_formats::WasmFormats;
 use crate::signature_aggregator::SignatureAggregator;
+use crate::wasm_formats::WasmFormats;
 use musig::hash::DefaultHasher;
 
 pub const PACKED_POINT_SIZE: usize = 32;
@@ -46,9 +46,7 @@ pub struct MusigWasm {
 #[wasm_bindgen]
 impl MusigWasm {
     pub(crate) fn new(musig: MusigSession<Bn256, DefaultHasher<Bn256>>) -> Self {
-        MusigWasm {
-            musig,
-        }
+        MusigWasm { musig }
     }
 
     #[wasm_bindgen(js_name = "getSelfIndex")]

@@ -25,7 +25,7 @@ pub trait MsgHash {
 }
 
 #[derive(Clone, Debug)]
-pub struct Sha256HStar { }
+pub struct Sha256HStar {}
 
 #[derive(Clone, Debug)]
 pub struct Sha256HStarAggregate {
@@ -42,7 +42,7 @@ impl Sha256HStarAggregate {
 
 impl Sha256HStar {
     pub fn new() -> Self {
-        Sha256HStar { }
+        Sha256HStar {}
     }
 
     fn write_public_key<E: JubjubEngine>(public_key: &PublicKey<E>, dest: &mut Vec<u8>) {
@@ -85,8 +85,10 @@ impl<E: JubjubEngine> AggregateHash<E> for Sha256HStarAggregate {
 
         let res = sha256_hash_to_scalar::<E>(&[], &[], &self.aggregate_hash_pubs);
 
-        self.aggregate_hash_pubs.resize_with(self.aggregate_hash_pubs.len() - PACKED_POINT_SIZE,
-                                             || { panic!("sha256 aggregate_hash logic error") });
+        self.aggregate_hash_pubs
+            .resize_with(self.aggregate_hash_pubs.len() - PACKED_POINT_SIZE, || {
+                panic!("sha256 aggregate_hash logic error")
+            });
 
         res
     }
@@ -118,12 +120,13 @@ pub trait MusigHasher<E: JubjubEngine> {
 
 #[derive(Clone, Debug)]
 pub struct ConfigurableMusigHasher<E, AH, CH, SH, MH>
-    where
-        E: JubjubEngine,
-        AH: AggregateHash<E>,
-        CH: CommitmentHash<E>,
-        SH: SignatureHash<E>,
-        MH: MsgHash{
+where
+    E: JubjubEngine,
+    AH: AggregateHash<E>,
+    CH: CommitmentHash<E>,
+    SH: SignatureHash<E>,
+    MH: MsgHash,
+{
     aggregate_hash: AH,
     commitment_hash: CH,
     signature_hash: SH,
@@ -131,11 +134,20 @@ pub struct ConfigurableMusigHasher<E, AH, CH, SH, MH>
     phantom: std::marker::PhantomData<E>,
 }
 
-impl<E: JubjubEngine, AH: AggregateHash<E>, CH: CommitmentHash<E>, SH: SignatureHash<E>, MH: MsgHash> ConfigurableMusigHasher<E, AH, CH, SH, MH> {
-    pub fn new(aggregate_hash: AH,
-               commitment_hash: CH,
-               signature_hash: SH,
-               message_hash: MH) -> Self {
+impl<
+        E: JubjubEngine,
+        AH: AggregateHash<E>,
+        CH: CommitmentHash<E>,
+        SH: SignatureHash<E>,
+        MH: MsgHash,
+    > ConfigurableMusigHasher<E, AH, CH, SH, MH>
+{
+    pub fn new(
+        aggregate_hash: AH,
+        commitment_hash: CH,
+        signature_hash: SH,
+        message_hash: MH,
+    ) -> Self {
         ConfigurableMusigHasher {
             aggregate_hash,
             commitment_hash,
@@ -146,9 +158,17 @@ impl<E: JubjubEngine, AH: AggregateHash<E>, CH: CommitmentHash<E>, SH: Signature
     }
 }
 
-pub type DefaultHasher<E> = ConfigurableMusigHasher<E, Sha256HStarAggregate, Sha256HStar, Sha256HStar, Sha256HStar>;
+pub type DefaultHasher<E> =
+    ConfigurableMusigHasher<E, Sha256HStarAggregate, Sha256HStar, Sha256HStar, Sha256HStar>;
 
-impl<E: JubjubEngine, AH: AggregateHash<E>, CH: CommitmentHash<E>, SH: SignatureHash<E>, MH: MsgHash> MusigHasher<E> for ConfigurableMusigHasher<E, AH, CH, SH, MH> {
+impl<
+        E: JubjubEngine,
+        AH: AggregateHash<E>,
+        CH: CommitmentHash<E>,
+        SH: SignatureHash<E>,
+        MH: MsgHash,
+    > MusigHasher<E> for ConfigurableMusigHasher<E, AH, CH, SH, MH>
+{
     fn aggregate_hash_set_pubs(&mut self, pubs: &[PublicKey<E>]) {
         self.aggregate_hash.set_pubs(pubs);
     }
@@ -161,7 +181,12 @@ impl<E: JubjubEngine, AH: AggregateHash<E>, CH: CommitmentHash<E>, SH: Signature
         self.commitment_hash.hash(r_pub)
     }
 
-    fn signature_hash(&self, x_pub: &PublicKey<E>, r_pub: &PublicKey<E>, m: &[u8]) -> <E as JubjubEngine>::Fs {
+    fn signature_hash(
+        &self,
+        x_pub: &PublicKey<E>,
+        r_pub: &PublicKey<E>,
+        m: &[u8],
+    ) -> <E as JubjubEngine>::Fs {
         self.signature_hash.hash(x_pub, r_pub, m)
     }
 

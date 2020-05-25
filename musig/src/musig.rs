@@ -1,9 +1,9 @@
-use std::marker::PhantomData;
 use crate::hash::MusigHasher;
 use bellman::pairing::ff::Field;
 use franklin_crypto::eddsa::{PrivateKey, PublicKey, Seed, Signature};
 use franklin_crypto::jubjub::edwards::Point;
 use franklin_crypto::jubjub::{FixedGenerators, JubjubEngine, Unknown};
+use std::marker::PhantomData;
 
 #[derive(Debug)]
 pub enum MusigError {

@@ -2,8 +2,8 @@ mod musig_tests {
     use bellman::pairing::bn256::Bn256;
     use franklin_crypto::alt_babyjubjub::{AltJubjubBn256, FixedGenerators};
     use franklin_crypto::eddsa::{PrivateKey, PublicKey, Seed};
+    use musig::hash::{DefaultHasher, Sha256HStar};
     use musig::musig::{MusigSession, MusigVerifier};
-    use musig::hash::{Sha256HStar, DefaultHasher};
     use rand::{thread_rng, Rng};
 
     type E = Bn256;
@@ -53,16 +53,19 @@ mod musig_tests {
     }
 
     fn sign_and_verify_random_message(n: usize) {
-        let hasher = DefaultHasher::new(Sha256HStar::new(),
-                                        Sha256HStar::new(),
-                                        Sha256HStar::new(),
-                                        Sha256HStar::new());
+        let hasher = DefaultHasher::new(
+            Sha256HStar::new(),
+            Sha256HStar::new(),
+            Sha256HStar::new(),
+            Sha256HStar::new(),
+        );
         let params = AltJubjubBn256::new();
         let generator = FixedGenerators::SpendingKeyGenerator;
 
         let mut rng = &mut thread_rng();
 
-        let (mut sessions, participants_sk) = create_sessions(&mut rng, n, generator, &params, &hasher);
+        let (mut sessions, participants_sk) =
+            create_sessions(&mut rng, n, generator, &params, &hasher);
 
         let aggregated_public_key = sessions[0].get_aggregated_public_key().clone();
 

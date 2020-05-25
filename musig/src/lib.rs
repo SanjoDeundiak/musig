@@ -1,2 +1,2 @@
-pub mod musig;
 pub mod hash;
+pub mod musig;

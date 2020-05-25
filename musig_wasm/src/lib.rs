@@ -1,6 +1,6 @@
-mod wasm_formats;
+pub mod builder;
+pub mod musig_wasm;
 pub mod signature_aggregator;
 pub mod signature_verifier;
-pub mod builder;
 pub mod utils;
-pub mod musig_wasm;
+mod wasm_formats;

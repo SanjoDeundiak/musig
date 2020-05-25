@@ -4,9 +4,9 @@ use franklin_crypto::eddsa::{PrivateKey, PublicKey};
 use rand::{Rng, SeedableRng, StdRng};
 use wasm_bindgen::prelude::*;
 
+use crate::musig_wasm::JUBJUB_PARAMS;
 use crate::musig_wasm::{FS_SIZE, PACKED_POINT_SIZE};
 use crate::wasm_formats::WasmFormats;
-use crate::musig_wasm::JUBJUB_PARAMS;
 
 #[wasm_bindgen(js_name = "MusigWasmUtils")]
 pub struct Utils {}
