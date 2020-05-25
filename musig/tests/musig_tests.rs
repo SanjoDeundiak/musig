@@ -53,10 +53,10 @@ mod musig_tests {
     }
 
     fn sign_and_verify_random_message(n: usize) {
-        let hasher = DefaultHasher::new(Sha256HStar {},
-                                        Sha256HStar {},
-                                        Sha256HStar {},
-                                        Sha256HStar {});
+        let hasher = DefaultHasher::new(Sha256HStar::new(),
+                                        Sha256HStar::new(),
+                                        Sha256HStar::new(),
+                                        Sha256HStar::new());
         let params = AltJubjubBn256::new();
         let generator = FixedGenerators::SpendingKeyGenerator;
 

@@ -77,7 +77,7 @@ pub struct MusigSession<E: JubjubEngine, H: MusigHasher<E>> {
 
 impl<E: JubjubEngine, H: MusigHasher<E>> MusigSession<E, H> {
     pub fn new(
-        hasher: H,
+        mut hasher: H,
         generator: FixedGenerators,
         params: &E::Params,
         participants: Vec<PublicKey<E>>,
@@ -92,7 +92,7 @@ impl<E: JubjubEngine, H: MusigHasher<E>> MusigSession<E, H> {
 
         let (aggregated_public_key, a_self) = MusigSession::<E, H>::compute_aggregated_public_key(
             &participants,
-            &hasher,
+            &mut hasher,
             self_index,
             params,
         );
@@ -122,7 +122,7 @@ impl<E: JubjubEngine, H: MusigHasher<E>> MusigSession<E, H> {
 
     fn compute_aggregated_public_key(
         participants: &[PublicKey<E>],
-        hasher: &H,
+        hasher: &mut H,
         self_index: usize,
         params: &E::Params,
     ) -> (PublicKey<E>, E::Fs) {
@@ -130,9 +130,10 @@ impl<E: JubjubEngine, H: MusigHasher<E>> MusigSession<E, H> {
 
         let mut a_self = None;
 
+        hasher.aggregate_hash_set_pubs(&participants);
+
         for i in 0..participants.len() {
-            // TODO: Optimize
-            let ai = hasher.aggregate_hash(&participants, &participants[i]);
+            let ai = hasher.aggregate_hash(&participants[i]);
 
             x = x.add(&participants[i].0.mul(ai, params), params);
 
