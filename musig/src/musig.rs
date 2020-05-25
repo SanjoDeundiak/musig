@@ -1,4 +1,5 @@
-use crate::hash::{AggregateHash, CommitmentHash, MsgHash, SignatureHash};
+use std::marker::PhantomData;
+use crate::hash::MusigHasher;
 use bellman::pairing::ff::Field;
 use franklin_crypto::eddsa::{PrivateKey, PublicKey, Seed, Signature};
 use franklin_crypto::jubjub::edwards::Point;
@@ -53,10 +54,8 @@ impl std::fmt::Display for MusigError {
     }
 }
 
-pub struct MusigSession<E: JubjubEngine> {
-    commitment_hash: Box<dyn CommitmentHash<E>>,
-    signature_hash: Box<dyn SignatureHash<E>>,
-    msg_hash: Box<dyn MsgHash>,
+pub struct MusigSession<E: JubjubEngine, H: MusigHasher<E>> {
+    hasher: H,
     participants: Vec<PublicKey<E>>,
     self_index: usize,
     aggregated_public_key: PublicKey<E>,
@@ -76,12 +75,9 @@ pub struct MusigSession<E: JubjubEngine> {
     performed_sign: bool,
 }
 
-impl<E: JubjubEngine> MusigSession<E> {
+impl<E: JubjubEngine, H: MusigHasher<E>> MusigSession<E, H> {
     pub fn new(
-        aggregate_hash: Box<dyn AggregateHash<E>>,
-        commitment_hash: Box<dyn CommitmentHash<E>>,
-        signature_hash: Box<dyn SignatureHash<E>>,
-        msg_hash: Box<dyn MsgHash>,
+        hasher: H,
         generator: FixedGenerators,
         params: &E::Params,
         participants: Vec<PublicKey<E>>,
@@ -94,20 +90,18 @@ impl<E: JubjubEngine> MusigSession<E> {
             return Err(MusigError::SelfIndexOutOfBounds);
         }
 
-        let (aggregated_public_key, a_self) = MusigSession::<E>::compute_aggregated_public_key(
+        let (aggregated_public_key, a_self) = MusigSession::<E, H>::compute_aggregated_public_key(
             &participants,
-            &*aggregate_hash,
+            &hasher,
             self_index,
             params,
         );
 
         let (r_self, r_pub_self, t) =
-            MusigSession::<E>::generate_commitment(seed, &*commitment_hash, params, generator);
+            MusigSession::<E, H>::generate_commitment(seed, &hasher, params, generator);
 
         let session = MusigSession {
-            commitment_hash,
-            signature_hash,
-            msg_hash,
+            hasher,
             participants,
             self_index,
             aggregated_public_key,
@@ -128,7 +122,7 @@ impl<E: JubjubEngine> MusigSession<E> {
 
     fn compute_aggregated_public_key(
         participants: &[PublicKey<E>],
-        aggregate_hash: &dyn AggregateHash<E>,
+        hasher: &H,
         self_index: usize,
         params: &E::Params,
     ) -> (PublicKey<E>, E::Fs) {
@@ -138,7 +132,7 @@ impl<E: JubjubEngine> MusigSession<E> {
 
         for i in 0..participants.len() {
             // TODO: Optimize
-            let ai = aggregate_hash.hash(&participants, &participants[i]);
+            let ai = hasher.aggregate_hash(&participants, &participants[i]);
 
             x = x.add(&participants[i].0.mul(ai, params), params);
 
@@ -154,7 +148,7 @@ impl<E: JubjubEngine> MusigSession<E> {
 
     fn generate_commitment(
         seed: Seed<E>,
-        commitment_hash: &dyn CommitmentHash<E>,
+        hasher: &H,
         params: &E::Params,
         generator: FixedGenerators,
     ) -> (PrivateKey<E>, PublicKey<E>, Vec<u8>) {
@@ -162,7 +156,7 @@ impl<E: JubjubEngine> MusigSession<E> {
 
         let r_pub = PublicKey::from_private(&r, generator, params);
 
-        let t = commitment_hash.hash(&r_pub);
+        let t = hasher.commitment_hash(&r_pub);
 
         (r, r_pub, t)
     }
@@ -216,7 +210,7 @@ impl<E: JubjubEngine> MusigSession<E> {
             return Err(MusigError::DuplicateRPubAssignment);
         }
 
-        let t_real = self.commitment_hash.hash(&r_pub);
+        let t_real = self.hasher.commitment_hash(&r_pub);
 
         if !self.t_others[index]
             .as_ref()
@@ -245,9 +239,9 @@ impl<E: JubjubEngine> MusigSession<E> {
             return Err(MusigError::SigningShouldHappenOnlyOncePerSession);
         }
 
-        let msg_hash = self.msg_hash.hash(m);
+        let msg_hash = self.hasher.message_hash(m);
 
-        let mut s = self.signature_hash.hash(
+        let mut s = self.hasher.signature_hash(
             &self.aggregated_public_key,
             &self.r_pub_aggregated,
             &msg_hash,
@@ -285,27 +279,31 @@ impl<E: JubjubEngine> MusigSession<E> {
     }
 }
 
-pub struct MusigVerifier {
-    msg_hash: Box<dyn MsgHash>,
+pub struct MusigVerifier<E: JubjubEngine, H: MusigHasher<E>> {
+    hasher: H,
     generator: FixedGenerators,
+    phantom: PhantomData<E>,
 }
 
-impl MusigVerifier {
-    pub fn new(msg_hash: Box<dyn MsgHash>, generator: FixedGenerators) -> Self {
+impl<E: JubjubEngine, H: MusigHasher<E>> MusigVerifier<E, H> {
+    pub fn new(hasher: H, generator: FixedGenerators) -> Self {
         MusigVerifier {
-            msg_hash,
+            hasher,
             generator,
+            phantom: PhantomData,
         }
     }
 
-    pub fn verify_signature<E: JubjubEngine>(
+    pub fn verify_signature(
         &self,
         signature: &Signature<E>,
         msg: &[u8],
         aggregated_public_key: &PublicKey<E>,
         params: &E::Params,
     ) -> bool {
-        let msg_hash = self.msg_hash.hash(msg);
+        let msg_hash = self.hasher.message_hash(msg);
+
+        // FIXME
 
         aggregated_public_key.verify_musig_sha256(&msg_hash, signature, self.generator, params)
     }

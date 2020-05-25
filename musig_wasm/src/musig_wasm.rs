@@ -6,6 +6,7 @@ use lazy_static::lazy_static;
 
 use crate::wasm_formats::WasmFormats;
 use crate::signature_aggregator::SignatureAggregator;
+use musig::hash::DefaultHasher;
 
 pub const PACKED_POINT_SIZE: usize = 32;
 pub const FS_SIZE: usize = 32;
@@ -39,12 +40,12 @@ pub fn init() {
 
 #[wasm_bindgen]
 pub struct MusigWasm {
-    musig: MusigSession<Bn256>,
+    musig: MusigSession<Bn256, DefaultHasher<Bn256>>,
 }
 
 #[wasm_bindgen]
 impl MusigWasm {
-    pub(crate) fn new(musig: MusigSession<Bn256>) -> Self {
+    pub(crate) fn new(musig: MusigSession<Bn256, DefaultHasher<Bn256>>) -> Self {
         MusigWasm {
             musig,
         }

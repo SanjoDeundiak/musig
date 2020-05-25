@@ -1,5 +1,5 @@
 use musig::musig::MusigSession;
-use musig::hash::Sha256HStar;
+use musig::hash::{Sha256HStar, DefaultHasher};
 use bellman::pairing::bn256::Bn256;
 use franklin_crypto::alt_babyjubjub::FixedGenerators;
 use franklin_crypto::eddsa::{PublicKey, Seed};
@@ -8,7 +8,6 @@ use wasm_bindgen::prelude::*;
 
 use crate::musig_wasm::{MusigWasm, JUBJUB_PARAMS};
 use crate::wasm_formats::WasmFormats;
-use crate::hash_alg::HashAlg;
 
 pub const PACKED_POINT_SIZE: usize = 32;
 pub const FS_SIZE: usize = 32;
@@ -19,7 +18,6 @@ pub struct Builder {
     seed: Option<Seed<Bn256>>,
     self_index: usize,
     set_self_index: bool,
-    hash: HashAlg,
 }
 
 #[wasm_bindgen(js_class = "MusigWasmBuilder")]
@@ -31,24 +29,14 @@ impl Builder {
             seed: None,
             self_index: 0,
             set_self_index: false,
-            hash: HashAlg::SHA256,
         }
-    }
-
-    #[wasm_bindgen(js_name = "setAllHashes")]
-    pub fn set_all_hashes(&mut self, hash: HashAlg) {
-        self.hash = hash;
     }
 
     #[wasm_bindgen(js_name = "deriveSeed")]
     pub fn derive_seed(&mut self, sk: &[u8], msg: &[u8]) -> Result<(), JsValue> {
         let sk = WasmFormats::read_private_key(sk)?;
 
-        let hashed_msg = match self.hash {
-            HashAlg::SHA256 => {
-                Sha256::digest(msg).to_vec()
-            }
-        };
+        let hashed_msg = Sha256::digest(msg).to_vec();
 
         self.seed = Some(Seed::deterministic_seed(&sk, &hashed_msg));
 
@@ -87,27 +75,13 @@ impl Builder {
 
         let generator = FixedGenerators::SpendingKeyGenerator;
 
-        let aggregate_hash = match self.hash {
-            HashAlg::SHA256 => Box::new(Sha256HStar {}),
-        };
+        let hasher = DefaultHasher::new(Sha256HStar {},
+                                        Sha256HStar {},
+                                        Sha256HStar {},
+                                        Sha256HStar {});
 
-        let commitment_hash = match self.hash {
-            HashAlg::SHA256 => Box::new(Sha256HStar {}),
-        };
-
-        let signature_hash = match self.hash {
-            HashAlg::SHA256 => Box::new(Sha256HStar {}),
-        };
-
-        let msg_hash = match self.hash {
-            HashAlg::SHA256 => Box::new(Sha256HStar {}),
-        };
-
-        let session = MusigSession::<Bn256>::new(
-            aggregate_hash,
-            commitment_hash,
-            signature_hash,
-            msg_hash,
+        let session = MusigSession::<Bn256, DefaultHasher<Bn256>>::new(
+            hasher,
             generator,
             &JUBJUB_PARAMS,
             self.participants,

@@ -1,4 +1,5 @@
 use musig::musig::MusigSession;
+use musig::hash::DefaultHasher;
 use bellman::pairing::bn256::Bn256;
 use franklin_crypto::alt_babyjubjub::fs::Fs;
 use franklin_crypto::eddsa::PublicKey;
@@ -8,14 +9,14 @@ use crate::wasm_formats::WasmFormats;
 
 #[wasm_bindgen(js_name = "MusigWasmSignatureAggregator")]
 pub struct SignatureAggregator {
-    musig: MusigSession<Bn256>,
+    musig: MusigSession<Bn256, DefaultHasher<Bn256>>,
     signatures: Vec<Fs>,
     aggregated_public_key: PublicKey<Bn256>,
 }
 
 #[wasm_bindgen(js_class = "MusigWasmSignatureAggregator")]
 impl SignatureAggregator {
-    pub(crate) fn new(musig: MusigSession<Bn256>, aggregated_public_key: PublicKey<Bn256>) -> Self {
+    pub(crate) fn new(musig: MusigSession<Bn256, DefaultHasher<Bn256>>, aggregated_public_key: PublicKey<Bn256>) -> Self {
         SignatureAggregator {
             musig,
             signatures: Vec::new(),

@@ -3,7 +3,7 @@ mod musig_tests {
     use franklin_crypto::alt_babyjubjub::{AltJubjubBn256, FixedGenerators};
     use franklin_crypto::eddsa::{PrivateKey, PublicKey, Seed};
     use musig::musig::{MusigSession, MusigVerifier};
-    use musig::hash::Sha256HStar;
+    use musig::hash::{Sha256HStar, DefaultHasher};
     use rand::{thread_rng, Rng};
 
     type E = Bn256;
@@ -13,7 +13,8 @@ mod musig_tests {
         n: usize,
         generator: FixedGenerators,
         params: &AltJubjubBn256,
-    ) -> (Vec<MusigSession<E>>, Vec<PrivateKey<E>>) {
+        hasher: &DefaultHasher<E>,
+    ) -> (Vec<MusigSession<E, DefaultHasher<E>>>, Vec<PrivateKey<E>>) {
         let mut participants_sk: Vec<PrivateKey<E>> = Vec::new();
         let mut participants_pk: Vec<PublicKey<E>> = Vec::new();
 
@@ -28,18 +29,15 @@ mod musig_tests {
         }
 
         // Everybody creates MusigSession
-        let mut sessions: Vec<MusigSession<E>> = Vec::new();
+        let mut sessions: Vec<MusigSession<E, DefaultHasher<E>>> = Vec::new();
 
         for i in 0..n {
             let participants_copy: Vec<PublicKey<E>> = participants_pk.clone();
 
             let seed = Seed::<Bn256>(rng.gen());
 
-            let session: MusigSession<E> = MusigSession::new(
-                Box::new(Sha256HStar {}),
-                Box::new(Sha256HStar {}),
-                Box::new(Sha256HStar {}),
-                Box::new(Sha256HStar {}),
+            let session: MusigSession<E, DefaultHasher<E>> = MusigSession::new(
+                hasher.clone(),
                 generator,
                 params,
                 participants_copy,
@@ -55,12 +53,16 @@ mod musig_tests {
     }
 
     fn sign_and_verify_random_message(n: usize) {
+        let hasher = DefaultHasher::new(Sha256HStar {},
+                                        Sha256HStar {},
+                                        Sha256HStar {},
+                                        Sha256HStar {});
         let params = AltJubjubBn256::new();
         let generator = FixedGenerators::SpendingKeyGenerator;
 
         let mut rng = &mut thread_rng();
 
-        let (mut sessions, participants_sk) = create_sessions(&mut rng, n, generator, &params);
+        let (mut sessions, participants_sk) = create_sessions(&mut rng, n, generator, &params, &hasher);
 
         let aggregated_public_key = sessions[0].get_aggregated_public_key().clone();
 
@@ -122,7 +124,7 @@ mod musig_tests {
             assert!(signature.s.eq(&signature1.s));
         }
 
-        let verifier = MusigVerifier::new(Box::new(Sha256HStar {}), generator);
+        let verifier = MusigVerifier::new(hasher.clone(), generator);
 
         assert!(verifier.verify_signature(&signature, &msg, &aggregated_public_key, &params));
     }

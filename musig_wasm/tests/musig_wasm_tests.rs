@@ -1,7 +1,6 @@
 mod musig_wasm_tests {
     use byte_slice_cast::*;
     use musig_wasm::musig_wasm::MusigWasm;
-    use musig_wasm::hash_alg::HashAlg;
     use musig_wasm::builder::Builder;
     use musig_wasm::utils::Utils;
     use musig_wasm::signature_verifier::SignatureVerifier;
@@ -112,7 +111,7 @@ mod musig_wasm_tests {
 
         let signature = signature_aggregator.get_signature().expect("");
 
-        let verifier = SignatureVerifier::new(HashAlg::SHA256);
+        let verifier = SignatureVerifier::new();
 
         let verified = verifier
             .verify(&msg, &aggregated_public_key, &signature)
