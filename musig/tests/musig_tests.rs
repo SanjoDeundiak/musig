@@ -2,7 +2,7 @@ mod musig_tests {
     use bellman::pairing::bn256::Bn256;
     use franklin_crypto::alt_babyjubjub::{AltJubjubBn256, FixedGenerators};
     use franklin_crypto::eddsa::{PrivateKey, PublicKey, Seed};
-    use musig::hash::{DefaultHasher, Sha256HStar, Sha256HStarAggregate};
+    use musig::hash::{DefaultHasher, Sha256HStar, Sha512HStarAggregate};
     use musig::musig::{MusigSession, MusigVerifier};
     use rand::{thread_rng, Rng};
 
@@ -54,7 +54,7 @@ mod musig_tests {
 
     fn sign_and_verify_random_message(n: usize) {
         let hasher = DefaultHasher::new(
-            Sha256HStarAggregate::new(),
+            Sha512HStarAggregate::new(),
             Sha256HStar::new(),
             Sha256HStar::new(),
             Sha256HStar::new(),

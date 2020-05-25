@@ -1,7 +1,7 @@
 use bellman::pairing::bn256::Bn256;
 use franklin_crypto::alt_babyjubjub::FixedGenerators;
 use franklin_crypto::eddsa::{PublicKey, Seed};
-use musig::hash::{DefaultHasher, Sha256HStar, Sha256HStarAggregate};
+use musig::hash::{DefaultHasher, Sha256HStar, Sha512HStarAggregate};
 use musig::musig::MusigSession;
 use sha2::{Digest, Sha256};
 use wasm_bindgen::prelude::*;
@@ -76,7 +76,7 @@ impl Builder {
         let generator = FixedGenerators::SpendingKeyGenerator;
 
         let hasher = DefaultHasher::new(
-            Sha256HStarAggregate::new(),
+            Sha512HStarAggregate::new(),
             Sha256HStar::new(),
             Sha256HStar::new(),
             Sha256HStar::new(),

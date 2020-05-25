@@ -1,7 +1,7 @@
 use bellman::pairing::bn256::Bn256;
 use franklin_crypto::alt_babyjubjub::FixedGenerators;
 use franklin_crypto::eddsa::Signature;
-use musig::hash::{DefaultHasher, Sha256HStar, Sha256HStarAggregate};
+use musig::hash::{DefaultHasher, Sha256HStar, Sha512HStarAggregate};
 use musig::musig::MusigVerifier;
 use wasm_bindgen::prelude::*;
 
@@ -26,7 +26,7 @@ impl SignatureVerifier {
         let generator = FixedGenerators::SpendingKeyGenerator;
 
         let hasher = DefaultHasher::new(
-            Sha256HStarAggregate::new(),
+            Sha512HStarAggregate::new(),
             Sha256HStar::new(),
             Sha256HStar::new(),
             Sha256HStar::new(),
