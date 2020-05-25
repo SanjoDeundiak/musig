@@ -6,53 +6,6 @@ mod musig_tests {
     use musig::hash::Sha256HStar;
     use rand::{thread_rng, Rng};
 
-    struct SplitIterator<'a, T> {
-        index: usize,
-        left: &'a mut [T],
-        right: &'a mut [T],
-    }
-
-    impl<'a, T> SplitIterator<'a, T> {
-        fn new(left: &'a mut [T], right: &'a mut [T]) -> SplitIterator<'a, T> {
-            SplitIterator {
-                index: 0,
-                left,
-                right,
-            }
-        }
-
-        fn next(&mut self) -> Option<&mut T> {
-            let res = if self.index < self.left.len() {
-                Some(&mut self.left[self.index])
-            } else if self.index < self.left.len() + self.right.len() {
-                Some(&mut self.right[self.index - self.left.len()])
-            } else {
-                None
-            };
-
-            self.index += 1;
-
-            res
-        }
-    }
-
-    fn split_slice_at_inclusive<T>(slice: &mut [T], mid: usize) -> (SplitIterator<T>, &T) {
-        let len = slice.len();
-        let ptr = slice.as_mut_ptr();
-
-        unsafe {
-            assert!(mid < len);
-
-            (
-                SplitIterator::new(
-                    std::slice::from_raw_parts_mut(ptr, mid),
-                    std::slice::from_raw_parts_mut(ptr.add(mid + 1), len - mid - 1),
-                ),
-                &mut *ptr.add(mid),
-            )
-        }
-    }
-
     type E = Bn256;
 
     fn create_sessions(
@@ -120,25 +73,27 @@ mod musig_tests {
 
         // Commitments exchange stage
         for i in 0..n {
-            let (mut iterator, mid) = split_slice_at_inclusive(&mut sessions, i);
+            let t = sessions[i].get_t().to_vec();
 
-            let t = mid.get_t();
+            for (j, session) in sessions.iter_mut().enumerate() {
+                if j == i {
+                    continue;
+                }
 
-            for session in iterator {
-                session.set_t(t, mid.get_self_index()).expect("");
+                session.set_t(&t, i).expect("");
             }
         }
 
         // Reveal stage
         for i in 0..n {
-            let (mut iterator, mid) = split_slice_at_inclusive(&mut sessions, i);
+            let r_pub = sessions[i].get_r_pub().clone();
 
-            let r_pub = mid.get_r_pub();
+            for (j, session) in sessions.iter_mut().enumerate() {
+                if j == i {
+                    continue;
+                }
 
-            for session in iterator {
-                session
-                    .set_r_pub(r_pub.clone(), mid.get_self_index(), &params)
-                    .expect("");
+                session.set_r_pub(r_pub.clone(), i, &params).expect("");
             }
         }
 
