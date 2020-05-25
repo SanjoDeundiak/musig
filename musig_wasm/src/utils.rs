@@ -4,6 +4,7 @@ use franklin_crypto::eddsa::{PrivateKey, PublicKey};
 use rand::{Rng, SeedableRng, StdRng};
 use wasm_bindgen::prelude::*;
 
+use crate::musig_wasm::{FS_SIZE, PACKED_POINT_SIZE};
 use crate::wasm_formats::WasmFormats;
 use crate::musig_wasm::JUBJUB_PARAMS;
 
@@ -18,7 +19,7 @@ impl Utils {
 
         let private_key = PrivateKey::<Bn256>(rng.gen());
 
-        let mut vec = Vec::<u8>::new();
+        let mut vec = Vec::<u8>::with_capacity(FS_SIZE);
 
         WasmFormats::write_private_key(&private_key, &mut vec)?;
 
@@ -35,7 +36,7 @@ impl Utils {
             &JUBJUB_PARAMS,
         );
 
-        let mut vec = Vec::<u8>::new();
+        let mut vec = Vec::<u8>::with_capacity(PACKED_POINT_SIZE);
 
         WasmFormats::write_public_key(&public_key, &mut vec)?;
 

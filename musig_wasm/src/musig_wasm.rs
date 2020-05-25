@@ -63,7 +63,7 @@ impl MusigWasm {
 
     #[wasm_bindgen(js_name = "getRPub")]
     pub fn get_r_pub(&self) -> Result<Vec<u8>, JsValue> {
-        let mut vec = Vec::<u8>::new();
+        let mut vec = Vec::<u8>::with_capacity(PACKED_POINT_SIZE);
 
         WasmFormats::write_public_key(self.musig.get_r_pub(), &mut vec)?;
 
@@ -72,7 +72,7 @@ impl MusigWasm {
 
     #[wasm_bindgen(js_name = "getAggregatedPublicKey")]
     pub fn get_aggregated_public_key(&self) -> Result<Vec<u8>, JsValue> {
-        let mut vec = Vec::<u8>::new();
+        let mut vec = Vec::<u8>::with_capacity(PACKED_POINT_SIZE);
 
         WasmFormats::write_public_key(self.musig.get_aggregated_public_key(), &mut vec)?;
 
