@@ -2,6 +2,7 @@ use musig::musig::MusigSession;
 use bellman::pairing::bn256::Bn256;
 use franklin_crypto::alt_babyjubjub::AltJubjubBn256;
 use wasm_bindgen::prelude::*;
+use lazy_static::lazy_static;
 
 use crate::wasm_formats::WasmFormats;
 use crate::signature_aggregator::SignatureAggregator;
