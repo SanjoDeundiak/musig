@@ -23,7 +23,7 @@ pub trait MsgHash {
     fn hash(&self, m: &[u8]) -> Vec<u8>;
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Sha256HStar {}
 
 impl Sha256HStar {
@@ -88,7 +88,7 @@ pub trait MusigHasher<E: JubjubEngine> {
     fn message_hash(&self, m: &[u8]) -> Vec<u8>;
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct ConfigurableMusigHasher<E, AH, CH, SH, MH>
     where
         E: JubjubEngine,
