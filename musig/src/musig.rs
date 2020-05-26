@@ -1,5 +1,5 @@
-use crate::musig_hasher::MusigHasher;
 use crate::musig_error::MusigError;
+use crate::musig_hasher::MusigHasher;
 use bellman::pairing::ff::Field;
 use franklin_crypto::eddsa::{PrivateKey, PublicKey, Seed, Signature};
 use franklin_crypto::jubjub::edwards::Point;

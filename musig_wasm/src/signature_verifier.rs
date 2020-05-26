@@ -1,8 +1,8 @@
 use bellman::pairing::bn256::Bn256;
 use franklin_crypto::alt_babyjubjub::FixedGenerators;
 use franklin_crypto::eddsa::Signature;
+use musig::musig_hasher::{create_default_hasher, DefaultHasher};
 use musig::musig_verifier::MusigVerifier;
-use musig::musig_hasher::{DefaultHasher, create_default_hasher};
 use wasm_bindgen::prelude::*;
 
 use crate::musig_wasm::{FS_SIZE, JUBJUB_PARAMS, PACKED_POINT_SIZE};

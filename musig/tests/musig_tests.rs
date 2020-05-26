@@ -1,12 +1,12 @@
 mod musig_tests {
     use bellman::pairing::bn256::Bn256;
     use franklin_crypto::alt_babyjubjub::{AltJubjubBn256, FixedGenerators};
-    use franklin_crypto::eddsa::{PrivateKey, PublicKey, Seed};
     use franklin_crypto::eddsa::Signature;
+    use franklin_crypto::eddsa::{PrivateKey, PublicKey, Seed};
     use musig::hash::{Sha256HStar, Sha512HStarAggregate};
     use musig::musig::MusigSession;
-    use musig::musig_verifier::MusigVerifier;
     use musig::musig_hasher::DefaultHasher;
+    use musig::musig_verifier::MusigVerifier;
     use rand::{thread_rng, Rng};
 
     type E = Bn256;
@@ -55,10 +55,12 @@ mod musig_tests {
         (sessions, participants_sk)
     }
 
-    fn sign_random_message(sessions: &mut [MusigSession<E, DefaultHasher<E>>],
-                           n: usize,
-                           participants_sk: &[PrivateKey<E>],
-                           params: &AltJubjubBn256) -> (Signature<E>, PublicKey<E>, Vec<u8>) {
+    fn sign_random_message(
+        sessions: &mut [MusigSession<E, DefaultHasher<E>>],
+        n: usize,
+        participants_sk: &[PrivateKey<E>],
+        params: &AltJubjubBn256,
+    ) -> (Signature<E>, PublicKey<E>, Vec<u8>) {
         let rng = &mut thread_rng();
 
         let aggregated_public_key = sessions[0].get_aggregated_public_key().clone();
@@ -124,16 +126,21 @@ mod musig_tests {
         (signature, aggregated_public_key, msg)
     }
 
-    fn verify_message(hasher: &DefaultHasher<E>,
-                      generator: FixedGenerators,
-                      signature: &Signature<E>,
-                      aggregated_public_key: &PublicKey<E>,
-                      msg: &[u8],
-                      params: &AltJubjubBn256,
-                      should_verify: bool) {
+    fn verify_message(
+        hasher: &DefaultHasher<E>,
+        generator: FixedGenerators,
+        signature: &Signature<E>,
+        aggregated_public_key: &PublicKey<E>,
+        msg: &[u8],
+        params: &AltJubjubBn256,
+        should_verify: bool,
+    ) {
         let verifier = MusigVerifier::new(hasher.clone(), generator);
 
-        assert!(verifier.verify_signature(&signature, &msg, &aggregated_public_key, &params) == should_verify);
+        assert!(
+            verifier.verify_signature(&signature, &msg, &aggregated_public_key, &params)
+                == should_verify
+        );
     }
 
     fn sign_and_verify_random_message(n: usize) {
@@ -147,9 +154,18 @@ mod musig_tests {
         let (mut sessions, participants_sk) =
             create_sessions(&mut rng, n, generator, &params, &hasher);
 
-        let (signature, aggregated_public_key, msg) = sign_random_message(&mut sessions, n, &participants_sk, &params);
+        let (signature, aggregated_public_key, msg) =
+            sign_random_message(&mut sessions, n, &participants_sk, &params);
 
-        verify_message(&hasher, generator, &signature, &aggregated_public_key, &msg, &params, true);
+        verify_message(
+            &hasher,
+            generator,
+            &signature,
+            &aggregated_public_key,
+            &msg,
+            &params,
+            true,
+        );
     }
 
     fn sign_incorrect_private_key_and_verify_random_message(n: usize) {
@@ -165,9 +181,18 @@ mod musig_tests {
 
         participants_sk[0] = PrivateKey::<E>(rng.gen());
 
-        let (signature, aggregated_public_key, msg) = sign_random_message(&mut sessions, n, &participants_sk, &params);
+        let (signature, aggregated_public_key, msg) =
+            sign_random_message(&mut sessions, n, &participants_sk, &params);
 
-        verify_message(&hasher, generator, &signature, &aggregated_public_key, &msg, &params, false);
+        verify_message(
+            &hasher,
+            generator,
+            &signature,
+            &aggregated_public_key,
+            &msg,
+            &params,
+            false,
+        );
     }
 
     #[test]
@@ -181,12 +206,12 @@ mod musig_tests {
     }
 
     #[test]
-    fn  sign_verify__1_signer_invalid_private_key__should_not_verify() {
+    fn sign_verify__1_signer_invalid_private_key__should_not_verify() {
         sign_incorrect_private_key_and_verify_random_message(1);
     }
 
     #[test]
-    fn  sign_verify__5_signers_invalid_private_key__should_not_verify() {
+    fn sign_verify__5_signers_invalid_private_key__should_not_verify() {
         sign_incorrect_private_key_and_verify_random_message(5);
     }
 }

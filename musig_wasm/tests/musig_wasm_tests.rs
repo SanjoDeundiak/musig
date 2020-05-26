@@ -1,12 +1,12 @@
 mod musig_wasm_tests {
     use byte_slice_cast::*;
-    use musig_wasm::musig_wasm::init;
+    use hex;
     use musig_wasm::builder::Builder;
+    use musig_wasm::musig_wasm::init;
     use musig_wasm::musig_wasm::MusigWasm;
     use musig_wasm::signature_verifier::SignatureVerifier;
     use musig_wasm::utils::Utils;
     use rand::{thread_rng, Rng};
-    use hex;
 
     fn create_sessions(rng: &mut impl Rng, msg: &[u8], n: usize) -> (Vec<MusigWasm>, Vec<Vec<u8>>) {
         let mut participants_sk: Vec<Vec<u8>> = Vec::new();
@@ -158,35 +158,71 @@ mod musig_wasm_tests {
         init();
 
         let mut builder0 = Builder::new();
-        builder0.derive_seed(&hex::decode(TEST_VECTOR.sk0).expect(""),
-                             &hex::decode(TEST_VECTOR.msg).expect("")).expect("");
+        builder0
+            .derive_seed(
+                &hex::decode(TEST_VECTOR.sk0).expect(""),
+                &hex::decode(TEST_VECTOR.msg).expect(""),
+            )
+            .expect("");
 
-        builder0.add_participant(&hex::decode(TEST_VECTOR.pk0).expect(""), true).expect("");
-        builder0.add_participant(&hex::decode(TEST_VECTOR.pk1).expect(""), false).expect("");
+        builder0
+            .add_participant(&hex::decode(TEST_VECTOR.pk0).expect(""), true)
+            .expect("");
+        builder0
+            .add_participant(&hex::decode(TEST_VECTOR.pk1).expect(""), false)
+            .expect("");
         let mut session0 = builder0.build().expect("");
 
         let mut builder1 = Builder::new();
-        builder1.derive_seed(&hex::decode(TEST_VECTOR.sk1).expect(""),
-                             &hex::decode(TEST_VECTOR.msg).expect("")).expect("");
+        builder1
+            .derive_seed(
+                &hex::decode(TEST_VECTOR.sk1).expect(""),
+                &hex::decode(TEST_VECTOR.msg).expect(""),
+            )
+            .expect("");
 
-        builder1.add_participant(&hex::decode(TEST_VECTOR.pk0).expect(""), false).expect("");
-        builder1.add_participant(&hex::decode(TEST_VECTOR.pk1).expect(""), true).expect("");
+        builder1
+            .add_participant(&hex::decode(TEST_VECTOR.pk0).expect(""), false)
+            .expect("");
+        builder1
+            .add_participant(&hex::decode(TEST_VECTOR.pk1).expect(""), true)
+            .expect("");
         let mut session1 = builder1.build().expect("");
 
         assert_eq!(session0.get_self_index(), 0);
         assert_eq!(session1.get_self_index(), 1);
 
-        assert_eq!(session0.get_aggregated_public_key().expect(""), hex::decode(TEST_VECTOR.aggregated_public_key).expect(""));
-        assert_eq!(session0.get_aggregated_public_key().expect(""), session1.get_aggregated_public_key().expect(""));
+        assert_eq!(
+            session0.get_aggregated_public_key().expect(""),
+            hex::decode(TEST_VECTOR.aggregated_public_key).expect("")
+        );
+        assert_eq!(
+            session0.get_aggregated_public_key().expect(""),
+            session1.get_aggregated_public_key().expect("")
+        );
 
         session1.set_t(&session0.get_t(), 0).expect("");
         session0.set_t(&session1.get_t(), 1).expect("");
 
-        session1.set_r_pub(&session0.get_r_pub().expect(""), 0).expect("");
-        session0.set_r_pub(&session1.get_r_pub().expect(""), 1).expect("");
+        session1
+            .set_r_pub(&session0.get_r_pub().expect(""), 0)
+            .expect("");
+        session0
+            .set_r_pub(&session1.get_r_pub().expect(""), 1)
+            .expect("");
 
-        let s0 = session0.sign(&hex::decode(TEST_VECTOR.sk0).expect(""), &hex::decode(TEST_VECTOR.msg).expect("")).expect("");
-        let s1 = session1.sign(&hex::decode(TEST_VECTOR.sk1).expect(""), &hex::decode(TEST_VECTOR.msg).expect("")).expect("");
+        let s0 = session0
+            .sign(
+                &hex::decode(TEST_VECTOR.sk0).expect(""),
+                &hex::decode(TEST_VECTOR.msg).expect(""),
+            )
+            .expect("");
+        let s1 = session1
+            .sign(
+                &hex::decode(TEST_VECTOR.sk1).expect(""),
+                &hex::decode(TEST_VECTOR.msg).expect(""),
+            )
+            .expect("");
 
         let mut aggregator0 = session0.build_signature_aggregator();
         aggregator0.add_signature(&s0).expect("");

@@ -2,7 +2,7 @@ use bellman::pairing::bn256::Bn256;
 use franklin_crypto::alt_babyjubjub::FixedGenerators;
 use franklin_crypto::eddsa::{PublicKey, Seed};
 use musig::musig::MusigSession;
-use musig::musig_hasher::{DefaultHasher, create_default_hasher};
+use musig::musig_hasher::{create_default_hasher, DefaultHasher};
 use sha2::{Digest, Sha256};
 use wasm_bindgen::prelude::*;
 
