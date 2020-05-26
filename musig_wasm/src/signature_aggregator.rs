@@ -1,12 +1,13 @@
 use bellman::pairing::bn256::Bn256;
 use franklin_crypto::alt_babyjubjub::fs::Fs;
 use franklin_crypto::eddsa::PublicKey;
-use musig::hash::DefaultHasher;
+use musig::musig_hasher::DefaultHasher;
 use musig::musig::MusigSession;
 use wasm_bindgen::prelude::*;
 
 use crate::wasm_formats::WasmFormats;
 
+/// This struct is responsible for aggregating participants signatures into final musig.
 #[wasm_bindgen(js_name = "MusigWasmSignatureAggregator")]
 pub struct SignatureAggregator {
     musig: MusigSession<Bn256, DefaultHasher<Bn256>>,
@@ -27,6 +28,7 @@ impl SignatureAggregator {
         }
     }
 
+    /// Adds signature from one of participants.
     #[wasm_bindgen(js_name = "addSignature")]
     pub fn add_signature(&mut self, signature: &[u8]) -> Result<(), JsValue> {
         let s = WasmFormats::read_fs_le(signature)?;
@@ -36,6 +38,7 @@ impl SignatureAggregator {
         Ok(())
     }
 
+    /// Returns signature after aggregating all participants' signatures.
     #[wasm_bindgen(js_name = "getSignature")]
     pub fn get_signature(&self) -> Result<Vec<u8>, JsValue> {
         let signature = self

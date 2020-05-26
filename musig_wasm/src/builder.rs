@@ -1,7 +1,8 @@
 use bellman::pairing::bn256::Bn256;
 use franklin_crypto::alt_babyjubjub::FixedGenerators;
 use franklin_crypto::eddsa::{PublicKey, Seed};
-use musig::hash::{DefaultHasher, Sha256HStar, Sha512HStarAggregate};
+use musig::hash::{Sha256HStar, Sha512HStarAggregate};
+use musig::musig_hasher::DefaultHasher;
 use musig::musig::MusigSession;
 use sha2::{Digest, Sha256};
 use wasm_bindgen::prelude::*;
@@ -12,6 +13,7 @@ use crate::wasm_formats::WasmFormats;
 pub const PACKED_POINT_SIZE: usize = 32;
 pub const FS_SIZE: usize = 32;
 
+/// Class used to Build MusigSession.
 #[wasm_bindgen(js_name = "MusigWasmBuilder")]
 pub struct Builder {
     participants: Vec<PublicKey<Bn256>>,
@@ -22,6 +24,7 @@ pub struct Builder {
 
 #[wasm_bindgen(js_class = "MusigWasmBuilder")]
 impl Builder {
+    /// Creates empty builder.
     #[wasm_bindgen(constructor)]
     pub fn new() -> Self {
         Builder {
@@ -32,6 +35,7 @@ impl Builder {
         }
     }
 
+    /// Derives deterministic seed from statis private key sk and message to be signed msg.
     #[wasm_bindgen(js_name = "deriveSeed")]
     pub fn derive_seed(&mut self, sk: &[u8], msg: &[u8]) -> Result<(), JsValue> {
         let sk = WasmFormats::read_private_key(sk)?;
@@ -43,6 +47,9 @@ impl Builder {
         Ok(())
     }
 
+    /// Adds participant.
+    ///
+    /// Participants should be strictly ordered.
     #[wasm_bindgen(js_name = "addParticipant")]
     pub fn add_participant(
         &mut self,
@@ -65,6 +72,7 @@ impl Builder {
         Ok(())
     }
 
+    /// Builds MusigWasm.
     #[wasm_bindgen]
     pub fn build(self) -> Result<MusigWasm, JsValue> {
         if !self.set_self_index {

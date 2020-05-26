@@ -1,4 +1,4 @@
-use crate::hash::MusigHasher;
+use crate::musig_hasher::MusigHasher;
 use bellman::pairing::ff::Field;
 use franklin_crypto::eddsa::{PrivateKey, PublicKey, Seed, Signature};
 use franklin_crypto::jubjub::edwards::Point;
@@ -54,6 +54,11 @@ impl std::fmt::Display for MusigError {
     }
 }
 
+/// This struct allows to perform simple schnorr multi-signature.
+///
+/// Paper that describes algorithm can be found here: https://eprint.iacr.org/2018/068.pdf.
+/// New MusigSession should be created for each signature.
+/// This class is not thread-safe.
 pub struct MusigSession<E: JubjubEngine, H: MusigHasher<E>> {
     hasher: H,
     participants: Vec<PublicKey<E>>,
@@ -76,6 +81,15 @@ pub struct MusigSession<E: JubjubEngine, H: MusigHasher<E>> {
 }
 
 impl<E: JubjubEngine, H: MusigHasher<E>> MusigSession<E, H> {
+    /// Creates new MusigSession
+    ///
+    /// # Arguments
+    /// * `hasher` - trait object responsible for hashing.
+    /// * `generator` - Generator used for elliptic curves operations.
+    /// * `params` - Curve parameters.
+    /// * `participants` - Static public keys of signature participants. Should be strictly ordered.
+    /// * `seed` - Seed used for r. Could be either randomly generated per session or derived from static private key and message.
+    /// * `self_index` - Index of current participant in participants vector.
     pub fn new(
         mut hasher: H,
         generator: FixedGenerators,
@@ -162,22 +176,37 @@ impl<E: JubjubEngine, H: MusigHasher<E>> MusigSession<E, H> {
         (r, r_pub, t)
     }
 
+    /// Returns self index.
     pub fn get_self_index(&self) -> usize {
         self.self_index
     }
 
+    /// Returns commitment.
+    ///
+    /// Commitments exchange should happen is the first step of creating musig.
+    /// Commitment should be sent to all other participants and should be set using set_t fn.
     pub fn get_t(&self) -> &[u8] {
         &self.t_self
     }
 
+    /// Returns R.
+    ///
+    /// R is a public value from which commitment is generated.
+    /// Participants should exchange their R with each other as a second step of musig process.
+    /// Use set_r_pub to set R from other participants.
     pub fn get_r_pub(&self) -> &PublicKey<E> {
         &self.r_pub_self
     }
 
+    /// Returns aggregated public key which can be used to verify musig.
+    ///
+    /// Please be aware that upon musig verification one should check that given set of static
+    /// public keys indeed gives exactly the same aggregated public key as one used for verification.
     pub fn get_aggregated_public_key(&self) -> &PublicKey<E> {
         &self.aggregated_public_key
     }
 
+    /// Sets commitment from participant with given index.
     pub fn set_t(&mut self, t: &[u8], index: usize) -> Result<(), MusigError> {
         if self.self_index == index {
             return Err(MusigError::AssigningCommitmentToSelfIsForbidden);
@@ -193,6 +222,9 @@ impl<E: JubjubEngine, H: MusigHasher<E>> MusigSession<E, H> {
         Ok(())
     }
 
+    /// Sets R value from participant with given index.
+    ///
+    /// After setting R values for all participants sign method can be called.
     pub fn set_r_pub(
         &mut self,
         r_pub: PublicKey<E>,
@@ -231,6 +263,8 @@ impl<E: JubjubEngine, H: MusigHasher<E>> MusigSession<E, H> {
         Ok(())
     }
 
+    /// Produces signature part for current participant for message m using participant's static
+    /// private key sk. Signature parts should be aggregated in the end.
     pub fn sign(&mut self, sk: &PrivateKey<E>, m: &[u8]) -> Result<E::Fs, MusigError> {
         if self.r_pub_count != self.participants.len() {
             return Err(MusigError::SigningBeforeSettingAllRPubIsForbidden);
@@ -257,6 +291,7 @@ impl<E: JubjubEngine, H: MusigHasher<E>> MusigSession<E, H> {
         Ok(s)
     }
 
+    /// Aggregates participants signature parts into final musig.
     pub fn aggregate_signature(
         &self,
         participant_signatures: &[E::Fs],
@@ -280,6 +315,7 @@ impl<E: JubjubEngine, H: MusigHasher<E>> MusigSession<E, H> {
     }
 }
 
+/// This struct allows to verify musig
 pub struct MusigVerifier<E: JubjubEngine, H: MusigHasher<E>> {
     hasher: H,
     generator: FixedGenerators,
@@ -287,6 +323,11 @@ pub struct MusigVerifier<E: JubjubEngine, H: MusigHasher<E>> {
 }
 
 impl<E: JubjubEngine, H: MusigHasher<E>> MusigVerifier<E, H> {
+    /// Creates new verifier
+    ///
+    /// # Arguments
+    /// * `hasher` - trait object responsible for hashing. Only message hash is used here. Should be the same as in MusigSession.
+    /// * `generator` - Generator used for elliptic curves operations. Should be the same as in MusigSession.
     pub fn new(hasher: H, generator: FixedGenerators) -> Self {
         MusigVerifier {
             hasher,
@@ -295,6 +336,10 @@ impl<E: JubjubEngine, H: MusigHasher<E>> MusigVerifier<E, H> {
         }
     }
 
+    /// Verifies musig.
+    ///
+    /// Please be aware that upon musig verification one should check that given set of static
+    /// public keys indeed gives exactly the same aggregated public key as one passed here.
     pub fn verify_signature(
         &self,
         signature: &Signature<E>,
@@ -304,7 +349,7 @@ impl<E: JubjubEngine, H: MusigHasher<E>> MusigVerifier<E, H> {
     ) -> bool {
         let msg_hash = self.hasher.message_hash(msg);
 
-        // FIXME
+        // TODO: Works only with sha256
 
         aggregated_public_key.verify_musig_sha256(&msg_hash, signature, self.generator, params)
     }

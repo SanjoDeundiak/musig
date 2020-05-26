@@ -1,13 +1,15 @@
 use bellman::pairing::bn256::Bn256;
 use franklin_crypto::alt_babyjubjub::FixedGenerators;
 use franklin_crypto::eddsa::Signature;
-use musig::hash::{DefaultHasher, Sha256HStar, Sha512HStarAggregate};
+use musig::hash::{Sha256HStar, Sha512HStarAggregate};
+use musig::musig_hasher::DefaultHasher;
 use musig::musig::MusigVerifier;
 use wasm_bindgen::prelude::*;
 
 use crate::musig_wasm::{FS_SIZE, JUBJUB_PARAMS, PACKED_POINT_SIZE};
 use crate::wasm_formats::WasmFormats;
 
+/// This struct is responsible for verifying musig.
 #[wasm_bindgen(js_name = "MusigWasmVerifier")]
 pub struct SignatureVerifier {
     verifier: MusigVerifier<Bn256, DefaultHasher<Bn256>>,
@@ -21,6 +23,7 @@ impl Default for SignatureVerifier {
 
 #[wasm_bindgen(js_class = "MusigWasmVerifier")]
 impl SignatureVerifier {
+    /// Creates new verifier.
     #[wasm_bindgen(constructor)]
     pub fn new() -> Self {
         let generator = FixedGenerators::SpendingKeyGenerator;
@@ -37,6 +40,7 @@ impl SignatureVerifier {
         SignatureVerifier { verifier }
     }
 
+    /// Verifies musig.
     #[wasm_bindgen]
     pub fn verify(
         &self,
