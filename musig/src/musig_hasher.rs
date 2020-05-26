@@ -15,12 +15,12 @@ pub trait MusigHasher<E: JubjubEngine> {
 #[derive(Clone, Debug)]
 /// Template implementation of MusigHasher trait implemented as aggregation of other traits.
 pub struct ConfigurableMusigHasher<E, AH, CH, SH, MH>
-    where
-        E: JubjubEngine,
-        AH: AggregateHash<E>,
-        CH: CommitmentHash<E>,
-        SH: SignatureHash<E>,
-        MH: MsgHash,
+where
+    E: JubjubEngine,
+    AH: AggregateHash<E>,
+    CH: CommitmentHash<E>,
+    SH: SignatureHash<E>,
+    MH: MsgHash,
 {
     aggregate_hash: AH,
     commitment_hash: CH,
@@ -30,12 +30,12 @@ pub struct ConfigurableMusigHasher<E, AH, CH, SH, MH>
 }
 
 impl<
-    E: JubjubEngine,
-    AH: AggregateHash<E>,
-    CH: CommitmentHash<E>,
-    SH: SignatureHash<E>,
-    MH: MsgHash,
-> ConfigurableMusigHasher<E, AH, CH, SH, MH>
+        E: JubjubEngine,
+        AH: AggregateHash<E>,
+        CH: CommitmentHash<E>,
+        SH: SignatureHash<E>,
+        MH: MsgHash,
+    > ConfigurableMusigHasher<E, AH, CH, SH, MH>
 {
     pub fn new(
         aggregate_hash: AH,
@@ -54,15 +54,15 @@ impl<
 }
 
 pub type DefaultHasher<E> =
-ConfigurableMusigHasher<E, Sha512HStarAggregate, Sha256HStar, Sha256HStar, Sha256HStar>;
+    ConfigurableMusigHasher<E, Sha512HStarAggregate, Sha256HStar, Sha256HStar, Sha256HStar>;
 
 impl<
-    E: JubjubEngine,
-    AH: AggregateHash<E>,
-    CH: CommitmentHash<E>,
-    SH: SignatureHash<E>,
-    MH: MsgHash,
-> MusigHasher<E> for ConfigurableMusigHasher<E, AH, CH, SH, MH>
+        E: JubjubEngine,
+        AH: AggregateHash<E>,
+        CH: CommitmentHash<E>,
+        SH: SignatureHash<E>,
+        MH: MsgHash,
+    > MusigHasher<E> for ConfigurableMusigHasher<E, AH, CH, SH, MH>
 {
     fn aggregate_hash_set_pubs(&mut self, pubs: &[PublicKey<E>]) {
         self.aggregate_hash.set_pubs(pubs);

@@ -1,8 +1,8 @@
 use bellman::pairing::bn256::Bn256;
 use franklin_crypto::alt_babyjubjub::fs::Fs;
 use franklin_crypto::eddsa::PublicKey;
-use musig::musig_hasher::DefaultHasher;
 use musig::musig::MusigSession;
+use musig::musig_hasher::DefaultHasher;
 use wasm_bindgen::prelude::*;
 
 use crate::wasm_formats::WasmFormats;

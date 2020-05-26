@@ -1,7 +1,7 @@
 use bellman::pairing::ff::{PrimeField, PrimeFieldRepr};
+use franklin_crypto::alt_babyjubjub::ToUniform;
 use franklin_crypto::eddsa::PublicKey;
 use franklin_crypto::jubjub::JubjubEngine;
-use franklin_crypto::alt_babyjubjub::ToUniform;
 use franklin_crypto::util::sha256_hash_to_scalar;
 use sha2::{Digest, Sha256, Sha512};
 

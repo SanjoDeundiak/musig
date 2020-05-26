@@ -3,8 +3,8 @@ mod musig_tests {
     use franklin_crypto::alt_babyjubjub::{AltJubjubBn256, FixedGenerators};
     use franklin_crypto::eddsa::{PrivateKey, PublicKey, Seed};
     use musig::hash::{Sha256HStar, Sha512HStarAggregate};
-    use musig::musig_hasher::DefaultHasher;
     use musig::musig::{MusigSession, MusigVerifier};
+    use musig::musig_hasher::DefaultHasher;
     use rand::{thread_rng, Rng};
 
     type E = Bn256;
