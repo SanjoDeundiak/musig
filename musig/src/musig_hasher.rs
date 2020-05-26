@@ -56,6 +56,13 @@ impl<
 pub type DefaultHasher<E> =
     ConfigurableMusigHasher<E, Sha512HStarAggregate, Sha256HStar, Sha256HStar, Sha256HStar>;
 
+pub fn create_default_hasher<E: JubjubEngine>() -> DefaultHasher<E> {
+    DefaultHasher::new(Sha512HStarAggregate::new(),
+                       Sha256HStar::new(),
+                       Sha256HStar::new(),
+                       Sha256HStar::new())
+}
+
 impl<
         E: JubjubEngine,
         AH: AggregateHash<E>,

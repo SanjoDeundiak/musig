@@ -1,58 +1,9 @@
 use crate::musig_hasher::MusigHasher;
+use crate::musig_error::MusigError;
 use bellman::pairing::ff::Field;
 use franklin_crypto::eddsa::{PrivateKey, PublicKey, Seed, Signature};
 use franklin_crypto::jubjub::edwards::Point;
 use franklin_crypto::jubjub::{FixedGenerators, JubjubEngine, Unknown};
-use std::marker::PhantomData;
-
-#[derive(Debug)]
-pub enum MusigError {
-    SelfIndexOutOfBounds,
-    AssigningCommitmentToSelfIsForbidden,
-    DuplicateCommitmentAssignment,
-    AssigningRPubToSelfIsForbidden,
-    AssigningRPubBeforeSettingAllCommitmentsIsForbidden,
-    DuplicateRPubAssignment,
-    RPubDoesntMatchWithCommitment,
-    SigningBeforeSettingAllRPubIsForbidden,
-    SigningShouldHappenOnlyOncePerSession,
-    AggregatingSignatureBeforeSigningIsForbidden,
-}
-
-impl MusigError {
-    pub fn description(&self) -> &str {
-        match *self {
-            MusigError::SelfIndexOutOfBounds => "self index is out of bounds",
-            MusigError::AssigningCommitmentToSelfIsForbidden => {
-                "assigning commitment to self is forbidden"
-            }
-            MusigError::DuplicateCommitmentAssignment => "duplicate commitment assignment",
-            MusigError::AssigningRPubToSelfIsForbidden => "assigning r_pub to self is forbidden",
-            MusigError::AssigningRPubBeforeSettingAllCommitmentsIsForbidden => {
-                "assigning r_pub before setting all commitments is forbidden"
-            }
-            MusigError::DuplicateRPubAssignment => "duplicate r_pub assignment",
-            MusigError::RPubDoesntMatchWithCommitment => "r_pub doesnt match with commitment",
-            MusigError::SigningBeforeSettingAllRPubIsForbidden => {
-                "signing before setting all r_pub is forbidden"
-            }
-            MusigError::SigningShouldHappenOnlyOncePerSession => {
-                "signing should happen only once per session"
-            }
-            MusigError::AggregatingSignatureBeforeSigningIsForbidden => {
-                "aggregating signature before signing is forbidden"
-            }
-        }
-    }
-}
-
-impl std::error::Error for MusigError {}
-
-impl std::fmt::Display for MusigError {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> Result<(), std::fmt::Error> {
-        write!(f, "{}", self.description())
-    }
-}
 
 /// This struct allows to perform simple schnorr multi-signature.
 ///
@@ -312,45 +263,5 @@ impl<E: JubjubEngine, H: MusigHasher<E>> MusigSession<E, H> {
             r: self.r_pub_aggregated.0.clone(),
             s,
         })
-    }
-}
-
-/// This struct allows to verify musig
-pub struct MusigVerifier<E: JubjubEngine, H: MusigHasher<E>> {
-    hasher: H,
-    generator: FixedGenerators,
-    phantom: PhantomData<E>,
-}
-
-impl<E: JubjubEngine, H: MusigHasher<E>> MusigVerifier<E, H> {
-    /// Creates new verifier
-    ///
-    /// # Arguments
-    /// * `hasher` - trait object responsible for hashing. Only message hash is used here. Should be the same as in MusigSession.
-    /// * `generator` - Generator used for elliptic curves operations. Should be the same as in MusigSession.
-    pub fn new(hasher: H, generator: FixedGenerators) -> Self {
-        MusigVerifier {
-            hasher,
-            generator,
-            phantom: PhantomData,
-        }
-    }
-
-    /// Verifies musig.
-    ///
-    /// Please be aware that upon musig verification one should check that given set of static
-    /// public keys indeed gives exactly the same aggregated public key as one passed here.
-    pub fn verify_signature(
-        &self,
-        signature: &Signature<E>,
-        msg: &[u8],
-        aggregated_public_key: &PublicKey<E>,
-        params: &E::Params,
-    ) -> bool {
-        let msg_hash = self.hasher.message_hash(msg);
-
-        // TODO: Works only with sha256
-
-        aggregated_public_key.verify_musig_sha256(&msg_hash, signature, self.generator, params)
     }
 }

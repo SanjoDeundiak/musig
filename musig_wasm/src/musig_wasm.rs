@@ -36,7 +36,7 @@ pub fn set_panic_hook() {
 #[wasm_bindgen]
 pub fn init() {
     set_panic_hook();
-    let _ = &JUBJUB_PARAMS;
+    lazy_static::initialize(&JUBJUB_PARAMS);
 }
 
 /// This struct allows to create musig.
@@ -135,38 +135,5 @@ impl MusigWasm {
         let aggregated_public_key = self.musig.get_aggregated_public_key().clone();
 
         SignatureAggregator::new(self.musig, aggregated_public_key)
-    }
-}
-
-#[cfg(test)]
-mod musig_wasm_unit_tests {
-    use crate::utils::Utils;
-    use crate::wasm_formats::WasmFormats;
-    use franklin_crypto::alt_babyjubjub::AltJubjubBn256;
-
-    #[test]
-    fn read_write() {
-        let seed = [1usize; 8];
-        let params = AltJubjubBn256::new();
-
-        let sk_data = Utils::generate_private_key(&seed).expect("");
-
-        let sk = WasmFormats::read_private_key(&sk_data[..]).expect("");
-
-        let mut sk_data2 = Vec::<u8>::new();
-
-        WasmFormats::write_private_key(&sk, &mut sk_data2).expect("");
-
-        assert_eq!(sk_data, sk_data2);
-
-        let pk_data = Utils::extract_public_key(&sk_data).expect("");
-
-        let pk = WasmFormats::read_public_key(&pk_data[..], &params).expect("");
-
-        let mut pk_data2 = Vec::<u8>::new();
-
-        WasmFormats::write_public_key(&pk, &mut pk_data2).expect("");
-
-        assert_eq!(pk_data, pk_data2);
     }
 }
